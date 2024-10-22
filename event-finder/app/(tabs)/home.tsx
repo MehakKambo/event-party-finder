@@ -9,7 +9,7 @@ const HomeScreen: React.FC = () => {
   // Function to pass event data to the viewEvent page
   const handleEventPress = (event: { date: string; name: string; description: string; image: any }) => {
     router.push({
-      pathname: '/viewEvent',
+      pathname: '/viewEvent', 
       params: { event: JSON.stringify(event) }, 
     });
   };
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#fff'
   },
   header: {
     flexDirection: 'row',
