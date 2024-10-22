@@ -1,35 +1,38 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { events } from '../../assets/data/eventData';
 
 const HomeScreen: React.FC = () => {
-  const images = [
-    require('../../assets/images/icon.png'), // Adjust the path based on your assets structure
-    require('../../assets/images/icon.png'),
-    require('../../assets/images/icon.png'),
-  ];
+  const router = useRouter();
 
-  const upcomingEvents = [
-    { date: '2024-10-20', name: 'Event 1', description: 'Description of Event 1' },
-    { date: '2024-10-21', name: 'Event 2', description: 'Description of Event 2' },
-    { date: '2024-10-22', name: 'Event 3', description: 'Description of Event 3' },
-  ];
+  // Function to pass event data to the viewEvent page
+  const handleEventPress = (event: { date: string; name: string; description: string; image: any }) => {
+    router.push({
+      pathname: '/viewEvent',
+      params: { event: JSON.stringify(event) }, 
+    });
+  };
 
-  const renderEvent = ({ item }: { item: { date: string; name: string; description: string } }) => (
-    <View style={styles.eventContainer}>
+  // Rendering each event in the list
+  const renderEvent = ({ item }: { item: { date: string; name: string; description: string; image: any } }) => (
+    <TouchableOpacity key={item.name} onPress={() => handleEventPress(item)} style={styles.eventContainer}>
       <Text style={styles.eventDate}>{item.date}</Text>
       <View style={styles.eventDetails}>
         <Text style={styles.eventName}>{item.name}</Text>
         <Text style={styles.eventDescription}>{item.description}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
+  const imageSource = require('../../assets/images/icon.png');
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.username}>Username</Text>
         <Image
-          source={require('../../assets/images/icon.png')} // Adjust the path based on your assets structure
+          // source={require('../../assets/images/icon.png')} // Adjust the path based on your assets structure
+          source={imageSource}
           style={styles.profilePic}
         />
       </View>
@@ -40,15 +43,14 @@ const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-        {images.map((image, index) => (
-          <Image key={index} source={image} style={styles.carouselImage} />
+        {events.map((event, index) => (
+          // <Image key={`image-${index}`} source={require('../../assets/images/icon.png')} style={styles.carouselImage} />
+          <Image key={`image-${index}`} source={imageSource} style={styles.carouselImage} />
         ))}
       </ScrollView>
       <Text style={styles.upcomingEventsHeader}>My Upcoming Events</Text>
       <ScrollView>
-        {upcomingEvents.map((event, index) => (
-          renderEvent({ item: event })
-        ))}
+        {events.map((event, index) => renderEvent({ item: event }))}
       </ScrollView>
     </View>
   );
