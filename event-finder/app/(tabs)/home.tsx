@@ -12,7 +12,7 @@ const PEXELS_API_QUERY = 'travel'
 const API_KEY = 'FDpB5MVjr825gTIIOdfJuNlDNtNUzqCThfiU6beRg6hIWm8D1GBBVz7c';
 
 // My Upcoming Events Height
-const EVENT_LIST_ITEM_HEIGHT = 75;
+const EVENT_LIST_ITEM_HEIGHT = 100;
 // local image storage key
 const IMAGES_STORAGE_KEY = 'storedImages'; 
 
@@ -125,7 +125,7 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 30,
   },
   bodyBackgroundImage: {
     flex: 1,
