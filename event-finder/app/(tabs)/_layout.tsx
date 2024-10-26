@@ -25,10 +25,35 @@ export default function TabLayout() {
       <Tabs.Screen
         name="viewEvent"
         options={{
-          title: 'My Events',
+          title: 'Events',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'calendar' : 'calendar-outline'} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="findEvents"
+        options={{
+          title: 'Find Events',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'search' : 'search-outline'} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'person' : 'person-outline'} color={color} />
+          ),
+        }}
+      />
+      {/* Hide the index tab */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

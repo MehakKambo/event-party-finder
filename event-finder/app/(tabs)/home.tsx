@@ -1,26 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback  } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { events } from '../../assets/data/eventData';
+import { useFocusEffect } from '@react-navigation/native';
 
 // TODO: REPLACE PEXELS API CALL WHEN DATABASE IS SETUP
 const PEXELS_API_URL = 'https://api.pexels.com/v1/search';
-const PEXELS_API_QUERY = 'travel'
+const PEXELS_API_QUERY = 'travel';
 // API key (temporary defined here for now) - Pexels
 const API_KEY = 'FDpB5MVjr825gTIIOdfJuNlDNtNUzqCThfiU6beRg6hIWm8D1GBBVz7c';
 
-// My Upcoming Events Height
+const MY_EVENTS_STORAGE_KEY = 'myEvents';
 const EVENT_LIST_ITEM_HEIGHT = 100;
-// local image storage key
-const IMAGES_STORAGE_KEY = 'storedImages'; 
+
+interface Event {
+  id: number;
+  date: string;
+  name: string;
+  description: string;
+  time?: string;
+  image: any;
+}
 
 const HomeScreen: React.FC = () => {
   const [images, setImages] = useState<{ uri: string }[]>([]);
+  const [myEvents, setMyEvents] = useState([]);
   const router = useRouter();
 
-  
   const fetchImages = async () => {
     try {
       const response = await axios.get(PEXELS_API_URL, {
@@ -36,170 +43,201 @@ const HomeScreen: React.FC = () => {
         uri: photo.src.medium,
       }));
       setImages(fetchedImages);
-
-      // save locally (AsyncStorage)
-      await AsyncStorage.setItem(IMAGES_STORAGE_KEY, JSON.stringify(fetchedImages));
     } catch (error) {
       console.error('Error fetching images:', error);
     }
   };
 
-  // load images from AsyncStorage or fetch them if not available
-  const loadImages = async () => {
+  // load RSVP'd events (My Upcoming Events) from AsyncStorage
+  const loadMyEvents = async () => {
     try {
-      const storedImages = await AsyncStorage.getItem(IMAGES_STORAGE_KEY);
-      if (storedImages) {
-        setImages(JSON.parse(storedImages));
-      } else {
-        // fetch if not already stored
-        fetchImages();
+      const myEventsData = await AsyncStorage.getItem(MY_EVENTS_STORAGE_KEY);
+      if (myEventsData) {
+        setMyEvents(JSON.parse(myEventsData));
       }
     } catch (error) {
-      console.error('Error loading images from storage:', error);
+      console.error('Failed to load RSVP’d events:', error);
     }
   };
 
-  // on init, fetch the images (or retrieve from storage)
-  useEffect(() => {
-    loadImages();
-  }, []);
-
-  const handleEventPress = (event: { date: string; name: string; description: string; image: any }) => {
+  // Handle event press to navigate to the ViewEvent screen
+  const handleEventPress = (event: Event) => {
     router.push({
       pathname: '/viewEvent',
       params: { event: JSON.stringify(event) },
     });
   };
 
-  const renderEvent = (event: { id: number, date: string; name: string; description: string; image: any }) => {
-    return (
-      <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventContainer}>
-        <ImageBackground 
-          source={event.image} 
-          style={styles.backgroundImage} 
-          resizeMode='cover'
-        >
-          <View style={styles.eventContent}>
-            <Text style={styles.eventDate}>{event.date}</Text>
-            <Text style={styles.eventName}>{event.name}</Text>
-            <Text style={styles.eventDescription}>{event.description}</Text>
-          </View>
-        </ImageBackground>
-      </TouchableOpacity>
-    );
-  };
+  // Fetch images and load events when the screen mounts
+  useEffect(() => {
+    fetchImages();
+    loadMyEvents();
+  }, []);
+
+  // Reload events whenever the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadMyEvents();
+    }, [])
+  );
+
+  // Render an event item
+  const renderEvent = (event: Event) => (
+    <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventContainer}>
+      <ImageBackground
+        source={event.image}
+        style={styles.backgroundImage}
+        resizeMode='cover'
+      >
+        <View style={styles.eventContent}>
+          <Text style={styles.eventName}>{event.name}</Text>
+          <Text style={styles.eventDate}>{event.date}</Text>
+          <Text style={styles.arrow}>›</Text> 
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/simple-background.jpg')} 
-      style={styles.bodyBackgroundImage}
-    >
+    <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
       <View style={styles.container}>
         <View style={styles.header}>
+
+          {/* Display Username and Profile Picture */}
           <Text style={styles.username}>Lotta B. Essen</Text>
-          <Image
-            source={require('../../assets/images/profile.png')}
-            style={styles.profilePic}
-          />
-        </View>
-        <View style={styles.locationContainer}>
-          <Text style={styles.locationText}>Current Location: Bothell, WA</Text>
-          <TouchableOpacity>
-            <Text style={styles.changeLink}>Change</Text>
+          <TouchableOpacity onPress={() => router.push('/profile')}>
+            <Image source={require('../../assets/images/profile.png')} style={styles.profilePic} />
           </TouchableOpacity>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-          {images.map((image, index) => (
-            <Image key={`image-${index}`} source={{ uri: image.uri }} style={styles.carouselImage} />
-          ))}
-        </ScrollView>
+
+        {/* Display Current Location */}
+        <View style={styles.locationContainer}>
+          <Text style={styles.locationText}>Current Location: Bothell, WA</Text>
+          <TouchableOpacity><Text style={styles.changeLink}>Change</Text></TouchableOpacity>
+        </View>
+
+        {/* Display Nearby Events */}
+        <View style={styles.nearbyEventsContainer}>
+          <Text style={styles.upcomingEventsHeader}>What's Happening Nearby?</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+            {images.map((image, index) => (
+              <Image key={`image-${index}`} source={{ uri: image.uri }} style={styles.carouselImage} />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Display User's Upcoming Events */}
         <Text style={styles.upcomingEventsHeader}>My Upcoming Events</Text>
-        <ScrollView>
-          {events.map((event) => renderEvent(event))}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {myEvents.length > 0 ? myEvents.map(event => renderEvent(event))
+            : <Text style={styles.noEventsText}>No events in your list</Text>}
         </ScrollView>
       </View>
     </ImageBackground>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 30,
+  container: { 
+    flex: 1, 
+    padding: 30, 
   },
-  bodyBackgroundImage: {
-    flex: 1,
-    justifyContent: 'center'
+  bodyBackgroundImage: { 
+    flex: 1, 
+    justifyContent: 'center' 
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
   },
-  username: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  username: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
   },
-  profilePic: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  profilePic: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20 
   },
-  locationContainer: {
-    marginVertical: 20,
+  locationContainer: { 
+    marginVertical: 20 
   },
-  locationText: {
-    fontSize: 16,
-    fontStyle: 'italic',
+  locationText: { 
+    fontSize: 16, 
+    fontStyle: 'italic' 
   },
-  changeLink: {
-    color: 'blue',
-    textDecorationLine: 'underline',
+  changeLink: { 
+    color: 'blue', 
+    textDecorationLine: 'underline' 
   },
-  imageScroll: {
-    marginVertical: 10,
+  nearbyEventsContainer: { 
+    marginVertical: 2 
   },
-  carouselImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    marginRight: 10,
+  imageScroll: { 
+    marginVertical: 10 
   },
-  upcomingEventsHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginVertical: 10,
+  carouselImage: { 
+    width: 150, 
+    height: 150, 
+    borderRadius: 10, 
+    marginRight: 10 
   },
-  eventContainer: {
-    marginVertical: 5,
-    height: EVENT_LIST_ITEM_HEIGHT,
-    overflow: 'hidden'
+  upcomingEventsHeader: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginVertical: 10 
   },
-  backgroundImage: {
-    width: '100%',
+  eventContainer: { 
+    marginVertical: 5, 
     height: EVENT_LIST_ITEM_HEIGHT, 
-    justifyContent: 'center',
-    borderRadius: 10,
-    overflow: 'hidden',
+    overflow: 'hidden', 
+    borderRadius: 10 
   },
-  eventContent: {
+  backgroundImage: { 
+    width: '100%', 
+    height: EVENT_LIST_ITEM_HEIGHT, 
+    justifyContent: 'center', 
+    borderRadius: 10 
+  },
+  eventContent: { 
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 10,
-    borderRadius: 10,
-    height: EVENT_LIST_ITEM_HEIGHT
+    padding: 10, 
+    borderRadius: 10, 
+    height: EVENT_LIST_ITEM_HEIGHT 
   },
-  eventDate: {
-    color: '#fff',
-    fontWeight: 'bold',
+  eventDate: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
   },
-  eventName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  arrow: { 
+    fontSize: 34, 
+    color: '#fff', 
+    position: 'absolute', 
+    right: 10, 
+    alignSelf: 'center'
   },
-  eventDescription: {
-    color: '#fff',
-    fontSize: 14,
+  eventName: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  noEventsText: { 
+    textAlign: 'center', 
+    marginVertical: 10, 
+    fontStyle: 'italic', 
+    color: '#888' 
+  },
+  rsvpButton: { 
+    marginTop: 10, 
+    backgroundColor: '#007AFF', 
+    padding: 5, 
+    borderRadius: 5 
+  },
+  buttonText: { 
+    color: 'white', 
+    textAlign: 'center' 
   },
 });
 
