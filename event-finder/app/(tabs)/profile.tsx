@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+
 
 const Profile: React.FC = () => {
-    const profileData = {
-        firstName: 'Lotto B.',
+    const [profileData, setProfileData] = useState({
+        firstName: 'Lotta B.',
         lastName: 'Essen',
         dob: '1990-01-01',
         phoneNumber: '+1 (123) 456-7890',
@@ -14,17 +17,75 @@ const Profile: React.FC = () => {
         state: 'NY',
         zipCode: '10001',
         country: 'USA',
+        profilePic: null
+    });
+
+    useEffect(() => {
+        const loadData = async ()=> {
+            try {
+                const savedData = await AsyncStorage.getItem('profileData');
+                if (savedData) setProfileData(JSON.parse(savedData));
+            } catch (err) {
+                console.error('Error loading profile data', err);
+            }
+        };
+        loadData();
+      }, 
+    []);
+
+    const handleSave = async () => {
+        try {
+          await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+          Alert.alert(
+            "Success!", // Custom header text
+            "Your profile has been saved successfully.", // Custom message text
+            [
+              { text: "OK", onPress: () => console.log("Profile saved confirmed") }
+            ]
+          );
+        } catch (err) {
+          console.error('Error saving profile data', err);
+          Alert.alert(
+            "Error", // Error-specific header text
+            "There was a problem saving your profile. Please try again.",
+            [
+              { text: "OK", onPress: () => console.log("Error alert dismissed") }
+            ]
+          );
+        }
       };
+
+    const pickImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            alert("Permission to access media library is required!");
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+        if (!result.canceled && result.assets?.length > 0) {
+            const selectedImage = result.assets[0].uri;
+            handleInputChange('profilePic', selectedImage);
+        }
+    };
+
+    const handleInputChange = (key: any, value: any) => {
+        setProfileData(prevData => ({...prevData, [key]: value}));
+    };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Profile Picture */}
             <View style={styles.profilePicContainer}>
                 <Image
-                    source={require('../../assets/images/profile.png')}
+                    source={profileData.profilePic ? { uri: profileData.profilePic } : require('../../assets/images/profile.png')}
                     style={styles.profilePic}
                 />
-                <TouchableOpacity>
+                <TouchableOpacity onPress={pickImage}>
                     <Text style={styles.changeLink}>Change</Text>
                 </TouchableOpacity>
             </View>
@@ -34,40 +95,87 @@ const Profile: React.FC = () => {
                 <Text style={styles.infoHeader}>Personal Information</Text>
 
                 <Text style={styles.infoLabel}>First Name:</Text>
-                <TextInput style={styles.textInput} value={profileData.firstName} editable={false} />
+                <TextInput 
+                    style={styles.textInput} 
+                    value={profileData.firstName} 
+                    onChangeText={(value) => handleInputChange('firstName', value)}
+                />
 
                 <Text style={styles.infoLabel}>Last Name:</Text>
-                <TextInput style={styles.textInput} value={profileData.lastName} editable={false} />
+                <TextInput 
+                    style={styles.textInput} 
+                    value={profileData.lastName}
+                    onChangeText={(value) => handleInputChange('lastName', value)}
+                />
 
                 <Text style={styles.infoLabel}>Date of Birth:</Text>
-                <TextInput style={styles.textInput} value={profileData.dob} editable={false} />
+                <TextInput 
+                    style={styles.textInput} 
+                    value={profileData.dob} 
+                    onChangeText={(value) => handleInputChange('dob', value)}
+                />
 
                 <Text style={styles.infoLabel}>Phone Number:</Text>
-                <TextInput style={styles.textInput} value={profileData.phoneNumber} editable={false} />
+                <TextInput 
+                    style={styles.textInput} 
+                    value={profileData.phoneNumber}
+                    onChangeText={(value) => handleInputChange('phoneNumber', value)}
+                />
 
                 <Text style={styles.infoLabel}>Email Address:</Text>
-                <TextInput style={styles.textInput} value={profileData.email} editable={false} />
+                <TextInput 
+                    style={styles.textInput}
+                    value={profileData.email}
+                    onChangeText={(value) => handleInputChange('email', value)}
+                />
 
                 <Text style={styles.infoHeader}>Address Information</Text>
 
                 <Text style={styles.infoLabel}>Address Line 1:</Text>
-                <TextInput style={styles.textInput} value={profileData.addressLine1} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.addressLine1}
+                    onChangeText={(value) => handleInputChange('addressLine1', value)}
+                />
 
                 <Text style={styles.infoLabel}>Address Line 2 (Optional):</Text>
-                <TextInput style={styles.textInput} value={profileData.addressLine2} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.addressLine2}
+                    onChangeText={(value) => handleInputChange('addressLine2', value)}
+                />
 
                 <Text style={styles.infoLabel}>City:</Text>
-                <TextInput style={styles.textInput} value={profileData.city} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.city}
+                    onChangeText={(value) => handleInputChange('city', value)}
+                />
 
                 <Text style={styles.infoLabel}>State:</Text>
-                <TextInput style={styles.textInput} value={profileData.state} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.state}
+                    onChangeText={(value) => handleInputChange('state', value)}
+                />
 
                 <Text style={styles.infoLabel}>Zip Code:</Text>
-                <TextInput style={styles.textInput} value={profileData.zipCode} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.zipCode}
+                    onChangeText={(value) => handleInputChange('zipCode', value)}
+                />
 
                 <Text style={styles.infoLabel}>Country:</Text>
-                <TextInput style={styles.textInput} value={profileData.country} editable={false} />
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.country}
+                    onChangeText={(value) => handleInputChange('country', value)}
+                />
             </View>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
         </ScrollView>
     );
 };
@@ -118,6 +226,17 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderRadius: 5,
         backgroundColor: '#fff',
+    },
+    saveButton: {
+        marginVertical: 20,
+        backgroundColor: '#007AFF',
+        padding: 10,
+        alignItems: 'center',
+        borderRadius: 5,
+    },
+    saveButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
 
