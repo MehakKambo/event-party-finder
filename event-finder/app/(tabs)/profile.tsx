@@ -35,25 +35,28 @@ const Profile: React.FC = () => {
 
     const handleSave = async () => {
         try {
-          await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
-          Alert.alert(
-            "Success!", // Custom header text
-            "Your profile has been saved successfully.", // Custom message text
-            [
-              { text: "OK", onPress: () => console.log("Profile saved confirmed") }
-            ]
-          );
+            const fullName = `${profileData.firstName} ${profileData.lastName}`;
+            const updatedProfileData = { ...profileData, fullName }; // Merge fullName into profileData
+            await AsyncStorage.setItem('profileData', JSON.stringify(updatedProfileData)); // Save updated data
+            setProfileData(updatedProfileData); // Update local state with fullName included
+            Alert.alert(
+                "Success!", 
+                "Your profile has been saved successfully.", 
+                [
+                    { text: "OK", onPress: () => console.log("Profile saved confirmed") }
+                ]
+            );
         } catch (err) {
-          console.error('Error saving profile data', err);
-          Alert.alert(
-            "Error", // Error-specific header text
-            "There was a problem saving your profile. Please try again.",
-            [
-              { text: "OK", onPress: () => console.log("Error alert dismissed") }
-            ]
-          );
+            console.error('Error saving profile data', err);
+            Alert.alert(
+                "Error", 
+                "There was a problem saving your profile. Please try again.",
+                [
+                    { text: "OK", onPress: () => console.log("Error alert dismissed") }
+                ]
+            );
         }
-      };
+    };
 
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback  } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, Alert } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -26,7 +26,23 @@ interface Event {
 const HomeScreen: React.FC = () => {
   const [images, setImages] = useState<{ uri: string }[]>([]);
   const [myEvents, setMyEvents] = useState([]);
+  const [profileData, setProfileData] = useState<{ fullName: string; profileImage: string }>({
+    fullName: '',
+    profileImage: '',
+  });
   const router = useRouter();
+
+  const loadProfileData = async () => {
+    try {
+      const storedProfileData = await AsyncStorage.getItem('profileData');
+      if (storedProfileData) {
+        setProfileData(JSON.parse(storedProfileData));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load profile data');
+      console.error('Error loading profile data:', error);
+    }
+  };
 
   const fetchImages = async () => {
     try {
@@ -70,6 +86,18 @@ const HomeScreen: React.FC = () => {
 
   // Fetch images and load events when the screen mounts
   useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+          const savedData = await AsyncStorage.getItem('profileData');
+          if (savedData) {
+              const parsedData = JSON.parse(savedData);
+              setProfileData(parsedData);
+          }
+      } catch (err) {
+          console.error('Error loading profile data', err);
+      }
+    };
+    loadProfileData();
     fetchImages();
     loadMyEvents();
   }, []);
@@ -104,10 +132,17 @@ const HomeScreen: React.FC = () => {
         <View style={styles.header}>
 
           {/* Display Username and Profile Picture */}
-          <Text style={styles.username}>Lotta B. Essen</Text>
+          <Text style={styles.username}>{profileData.fullName || 'User'}</Text>
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Image source={require('../../assets/images/profile.png')} style={styles.profilePic} />
-          </TouchableOpacity>
+                <Image
+                    source={
+                        profileData.profileImage
+                            ? { uri: profileData.profileImage }
+                            : require('../../assets/images/profile.png')
+                    }
+                    style={styles.profilePic}
+                />
+            </TouchableOpacity>
         </View>
 
         {/* Display Current Location */}
