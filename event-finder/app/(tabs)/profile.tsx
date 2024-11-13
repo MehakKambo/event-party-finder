@@ -3,22 +3,13 @@ import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
+import { useProfile } from '@/components/ProfileContext';
+
 
 const Profile: React.FC = () => {
-    const [profileData, setProfileData] = useState({
-        firstName: 'Lotta B.',
-        lastName: 'Essen',
-        dob: '1990-01-01',
-        phoneNumber: '+1 (123) 456-7890',
-        email: 'john.doe@example.com',
-        addressLine1: '123 Main Street',
-        addressLine2: 'Apartment 4B',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10001',
-        country: 'USA',
-        profilePic: null
-    });
+    const { profileData, setProfileData }= useProfile();
+    const [city, setCity] = useState(profileData.city);
+    const [state, setState] = useState(profileData.state);
 
     useEffect(() => {
         const loadData = async ()=> {
@@ -35,10 +26,8 @@ const Profile: React.FC = () => {
 
     const handleSave = async () => {
         try {
-            const fullName = `${profileData.firstName} ${profileData.lastName}`;
-            const updatedProfileData = { ...profileData, fullName }; // Merge fullName into profileData
-            await AsyncStorage.setItem('profileData', JSON.stringify(updatedProfileData)); // Save updated data
-            setProfileData(updatedProfileData); // Update local state with fullName included
+            await AsyncStorage.setItem('profileData', JSON.stringify(profileData)); 
+            setProfileData(profileData); 
             Alert.alert(
                 "Success!", 
                 "Your profile has been saved successfully.", 
