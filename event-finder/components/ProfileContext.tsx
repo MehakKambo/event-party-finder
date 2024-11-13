@@ -58,34 +58,36 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
             try {
                 const savedData = await AsyncStorage.getItem('profileData');
                 if (savedData) {
-                    setProfileData(JSON.parse(savedData)); // Set the context state
+                    const parsedData = JSON.parse(savedData);
+                    setProfileData(parsedData); // Set the context state
                 }
             } catch (err) {
                 console.error('Error loading profile data from AsyncStorage', err);
             }
         };
-
+    
         loadData(); // Call the load function on component mount
-    }, []); // Empty dependency array means this will run only once when the app starts
+    }, []);
 
     // fetch latitude coordinates mapped to city,state
     const fetchLatLong = async (city: string, state: string) => {
+        if (!city || !state) {
+            console.warn('City or state is missing. Cannot fetch latlong.');
+            return null;  // Return null if city or state are missing
+        }
+        
         try {
             const response = await axios.get(PHOTON_API_URL, {
-                params: {
-                    q: `${city}, ${state}` // City and State
-                }
+                params: { q: `${city}, ${state}` }
             });
+
             const firstFeature = response.data.features[0];
             if (firstFeature && firstFeature.geometry && Array.isArray(firstFeature.geometry.coordinates)) {
                 const [lon, lat] = firstFeature.geometry.coordinates;
-    
                 if (lat && lon) {
                     return `${lat},${lon}`;
                 }
             }
-    
-            console.log("Lat/Lon not found in the response");
             return null;
         } catch (error) {
             console.error('Error fetching geolocation:', error);
@@ -94,18 +96,44 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
 
     // save and fetch latlong
-    const saveProfile = async() => {
+    const saveProfile = async () => {
         try {
-            const latlong = await fetchLatLong(profileData.city, profileData.state);
-            if (latlong) {
-                setProfileData((prevData) => ({ ...prevData, latlong })); 
+            // Ensure latlong exists before saving profile
+            if (profileData.latlong) {
+                await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+                return;
             }
-            await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
-            await fetchLatLong(profileData.city, profileData.state);  // Fetch latlong when saving
+
+            if (profileData.city && profileData.state) {
+                const latlong = await fetchLatLong(profileData.city, profileData.state);
+
+                if (latlong) {
+                    setProfileData((prevData) => ({ ...prevData, latlong }));
+                    await AsyncStorage.setItem('profileData', JSON.stringify({ ...profileData, latlong }));
+                } else {
+                    console.warn('Failed to fetch latlong, profile will be saved without it.');
+                    await AsyncStorage.setItem('profileData', JSON.stringify(profileData));  // Save without latlong
+                }
+            } else {
+                console.warn('City or state is missing. Cannot fetch or save latlong.');
+                await AsyncStorage.setItem('profileData', JSON.stringify(profileData));  // Save without latlong
+            }
         } catch (error) {
             console.error('Error saving profile data:', error);
         }
     };
+
+    // Track changes in city or state to update latlong
+    useEffect(() => {
+        const updateLatLong = async () => {
+            await saveProfile(); // This will re-fetch latlong whenever city/state changes
+        };
+    
+        if (profileData.city && profileData.state) {
+            updateLatLong(); // Ensure latlong is updated whenever the city/state changes
+        }
+    }, [profileData.city, profileData.state]); // Trigger when city or state changes
+    
 
     return (
         <ProfileContext.Provider value={{ profileData, setProfileData, fetchLatLong, saveProfile }}>
