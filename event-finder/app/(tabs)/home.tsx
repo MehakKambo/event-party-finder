@@ -1,10 +1,9 @@
-import React, { useEffect, useState, } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
 import axios from 'axios';
 import { Link, useRouter } from 'expo-router';
 
 import { useProfile } from '@/components/ProfileContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -39,6 +38,7 @@ const HomeScreen: React.FC = () => {
   const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
   const [appState, setAppState] = useState(AppState.currentState);
   const [refreshOnResume, setRefreshOnResume] = useState(false);
+  const [cityState, setCityState] = useState<string>('');
   const { profileData } = useProfile();
   const router = useRouter();
 
@@ -47,7 +47,7 @@ const HomeScreen: React.FC = () => {
       const response = await axios.get(TICKETMASTER_API_URL, {
         params: {
           apikey: TICKETMASTER_API_KEY,
-          latlong: (profileData.latlong) ? profileData.latlong : '47.6062,-122.3321', // Seattle
+          latlong: profileData.latlong || '47.6062,-122.3321', // Default to Seattle if no latlong
           radius: 25,
           unit: 'miles',
           size: 10,
@@ -64,35 +64,43 @@ const HomeScreen: React.FC = () => {
         url: event.url,
         venue: event._embedded?.venues[0],
       })) || [];
-
       setNearbyEvents(events);
     } catch (error) {
       console.error('Error fetching nearby events:', error);
     }
   };
 
+  // Fetch city/state based on latlong when it's available
+  useEffect(() => {
+    // Only fetch city/state if latlong changes
+    if (profileData.latlong && !cityState) {
+      // Fetch nearby events every time the latlong changes
+      fetchNearbyEvents();
+    }
+
+  }, [profileData.latlong]);
+
   // Refresh events when app is resumed
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        console.log('App has come to the foreground!');
-        if (refreshOnResume) {
+        if (refreshOnResume && !profileData.latlong) { 
           fetchNearbyEvents();
           setRefreshOnResume(false);
         }
       } else if (nextAppState === 'background') {
-        console.log('App is in the background');
         setRefreshOnResume(true);
       }
       setAppState(nextAppState);
     };
+  
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
+  
     return () => {
       subscription.remove();
     };
-  }, [appState, refreshOnResume]);
-
+  }, [appState, refreshOnResume, profileData.latlong]);
+  
 
   // Pass event data to ViewEventScreen
   const handleEventPress = (event: Event) => {
@@ -102,14 +110,8 @@ const HomeScreen: React.FC = () => {
     });
   };
 
-  // Fetch nearby events on initial render
-  useEffect(() => {
-    fetchNearbyEvents();
-  }, []);
-
   // Render event card
   const renderEvent = (event: Event) => {
-    // Format date and time from '2022-10-15T19:00:00' to 'Saturday, October 15, 2022 at 7:00 PM'
     const date = new Date(event.date + 'T' + event.time);
     const options: Intl.DateTimeFormatOptions = {
       weekday: 'long',
@@ -120,7 +122,6 @@ const HomeScreen: React.FC = () => {
     const dayAndDate = date.toLocaleDateString('en-US', options);
     const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-    // Format location from venue, address, city, state, and country
     const venue = event.venue?.name || 'Unknown Venue';
     const address = event.venue?.address?.line1 || '';
     const city = event.venue?.city?.name || '';
@@ -131,14 +132,11 @@ const HomeScreen: React.FC = () => {
     return (
       <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
         <View style={styles.eventContent}>
-          {/* Event Image */}
           <ImageBackground
             source={event.image}
             style={styles.eventImage}
             resizeMode="cover"
           />
-
-          {/* Event Details */}
           <View style={styles.eventDetails}>
             <Text style={styles.eventDayTime}>{`${dayAndDate} at ${time}`}</Text>
             <Text style={styles.eventName}>{event.name}</Text>
@@ -152,25 +150,20 @@ const HomeScreen: React.FC = () => {
   return (
     <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Recommended Events Near You</Text>
         </View>
 
-        {/* Show current location */}
         <View style={styles.locationSelector}>
-          <Text style={styles.locationText}>{
-            profileData.city && profileData.state 
-            ? `${profileData.city}, ${profileData.state}` 
-            : "Location not available"}</Text>
+          <Text style={styles.locationText}>
+            {cityState || (profileData.city && profileData.state ? `${profileData.city}, ${profileData.state}` : 'Location not available')}
+          </Text>
           <TouchableOpacity>
-              <Link style={styles.changeLink} href="/profile">Change</Link>
+            <Link style={styles.changeLink} href="/profile">Change</Link>
           </TouchableOpacity>
         </View>
-
-        {/* Event List */}
         <ScrollView contentContainerStyle={styles.eventList}>
-          {nearbyEvents.map(event => renderEvent(event))}
+          {nearbyEvents.map((event) => renderEvent(event))}
         </ScrollView>
       </View>
     </ImageBackground>
@@ -195,14 +188,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000000',
   },
-  searchBar: {
-    marginTop: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: '#333',
-    borderRadius: 20,
-    color: '#000000',
-  },
   locationSelector: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -219,19 +204,6 @@ const styles = StyleSheet.create({
   },
   eventList: {
     paddingBottom: 20,
-  },
-  backgroundImage: {
-    width: '100%',
-    height: 150,
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 10,
-  },
-  eventDate: {
-    color: '#FFD700',
-    fontSize: 14,
   },
   eventCard: {
     flexDirection: 'row',

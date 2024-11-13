@@ -1,81 +1,74 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-
 import { useProfile } from '@/components/ProfileContext';
 
-
 const Profile: React.FC = () => {
-    const { profileData, setProfileData }= useProfile();
+    const { profileData, setProfileData } = useProfile();
     const [city, setCity] = useState(profileData.city);
     const [state, setState] = useState(profileData.state);
 
-    useEffect(() => {
-        const loadData = async ()=> {
-            try {
-                const savedData = await AsyncStorage.getItem('profileData');
-                if (savedData) setProfileData(JSON.parse(savedData));
-            } catch (err) {
-                console.error('Error loading profile data', err);
-            }
-        };
-        loadData();
-      }, 
-    []);
+    // Function to get latlong from city and state
+    const getLatLongFromCityState = async (city: string, state: string) => {
+        const response = await fetch(`https://photon.komoot.io/api/?q=${city},${state}`);
+        const data = await response.json();
+        const latlong = `${data.features[0].geometry.coordinates[1]},${data.features[0].geometry.coordinates[0]}`;
+        return latlong;
+    };
+
+    // Handle input changes for profile fields
+    const handleInputChange = (key: string, value: string) => {
+        setProfileData((prevData) => ({
+            ...prevData,
+            [key]: value,
+        }));
+    }
 
     const handleSave = async () => {
         try {
-            await AsyncStorage.setItem('profileData', JSON.stringify(profileData)); 
-            setProfileData(profileData); 
-            Alert.alert(
-                "Success!", 
-                "Your profile has been saved successfully.", 
-                [
-                    { text: "OK", onPress: () => console.log("Profile saved confirmed") }
-                ]
-            );
+            // Only update latlong if city or state is changed
+            if (city && state) {
+                const newLatLong = await getLatLongFromCityState(city, state);
+                if (profileData.latlong !== newLatLong) {
+                    setProfileData((prevData) => ({
+                        ...prevData,
+                        latlong: newLatLong, // Update latlong in context
+                    }));
+                }
+            }
+    
+            // Save profile data to AsyncStorage
+            await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+            Alert.alert("Success!", "Your profile has been saved successfully.");
         } catch (err) {
             console.error('Error saving profile data', err);
-            Alert.alert(
-                "Error", 
-                "There was a problem saving your profile. Please try again.",
-                [
-                    { text: "OK", onPress: () => console.log("Error alert dismissed") }
-                ]
-            );
+            Alert.alert("Error", "There was a problem saving your profile. Please try again.");
         }
     };
 
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
-          alert("Permission to access media library is required!");
-          return;
+            alert("Permission to access media library is required!");
+            return;
         }
-    
+
         const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 1,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
         });
-        
+
         if (!result.canceled && result.assets?.length > 0) {
-          const selectedImage = result.assets[0].uri;
-          setProfileData((prevData) => ({
-            ...prevData,
-            profilePic: selectedImage, // Update profile picture in context
-          }));
+            const selectedImage = result.assets[0].uri;
+            setProfileData((prevData) => ({
+                ...prevData,
+                profilePic: selectedImage, // Update profile picture in context
+            }));
         }
     };
-
-    const handleInputChange = (key: any, value: any) => {
-        setProfileData((prevData) => ({
-          ...prevData,
-          [key]: value,
-        }));
-      };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -95,35 +88,35 @@ const Profile: React.FC = () => {
                 <Text style={styles.infoHeader}>Personal Information</Text>
 
                 <Text style={styles.infoLabel}>First Name:</Text>
-                <TextInput 
-                    style={styles.textInput} 
-                    value={profileData.firstName} 
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.firstName}
                     onChangeText={(value) => handleInputChange('firstName', value)}
                 />
 
                 <Text style={styles.infoLabel}>Last Name:</Text>
-                <TextInput 
-                    style={styles.textInput} 
+                <TextInput
+                    style={styles.textInput}
                     value={profileData.lastName}
                     onChangeText={(value) => handleInputChange('lastName', value)}
                 />
 
                 <Text style={styles.infoLabel}>Date of Birth:</Text>
-                <TextInput 
-                    style={styles.textInput} 
-                    value={profileData.dob} 
+                <TextInput
+                    style={styles.textInput}
+                    value={profileData.dob}
                     onChangeText={(value) => handleInputChange('dob', value)}
                 />
 
                 <Text style={styles.infoLabel}>Phone Number:</Text>
-                <TextInput 
-                    style={styles.textInput} 
+                <TextInput
+                    style={styles.textInput}
                     value={profileData.phoneNumber}
                     onChangeText={(value) => handleInputChange('phoneNumber', value)}
                 />
 
                 <Text style={styles.infoLabel}>Email Address:</Text>
-                <TextInput 
+                <TextInput
                     style={styles.textInput}
                     value={profileData.email}
                     onChangeText={(value) => handleInputChange('email', value)}
@@ -149,14 +142,20 @@ const Profile: React.FC = () => {
                 <TextInput
                     style={styles.textInput}
                     value={profileData.city}
-                    onChangeText={(value) => handleInputChange('city', value)}
+                    onChangeText={(value) => {
+                        setCity(value); // Local state for city
+                        handleInputChange('city', value); // Update context state
+                    }}
                 />
 
                 <Text style={styles.infoLabel}>State:</Text>
                 <TextInput
                     style={styles.textInput}
                     value={profileData.state}
-                    onChangeText={(value) => handleInputChange('state', value)}
+                    onChangeText={(value) => {
+                        setState(value); // Local state for state
+                        handleInputChange('state', value); // Update context state
+                    }}
                 />
 
                 <Text style={styles.infoLabel}>Zip Code:</Text>
@@ -173,6 +172,7 @@ const Profile: React.FC = () => {
                     onChangeText={(value) => handleInputChange('country', value)}
                 />
             </View>
+
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
