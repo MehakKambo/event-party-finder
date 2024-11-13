@@ -50,24 +50,32 @@ const Profile: React.FC = () => {
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
-            alert("Permission to access media library is required!");
-            return;
+          alert("Permission to access media library is required!");
+          return;
         }
+    
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 1,
         });
+        
         if (!result.canceled && result.assets?.length > 0) {
-            const selectedImage = result.assets[0].uri;
-            handleInputChange('profilePic', selectedImage);
+          const selectedImage = result.assets[0].uri;
+          setProfileData((prevData) => ({
+            ...prevData,
+            profilePic: selectedImage, // Update profile picture in context
+          }));
         }
     };
 
     const handleInputChange = (key: any, value: any) => {
-        setProfileData(prevData => ({...prevData, [key]: value}));
-    };
+        setProfileData((prevData) => ({
+          ...prevData,
+          [key]: value,
+        }));
+      };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
