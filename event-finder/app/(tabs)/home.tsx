@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, 
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 
+import { useProfile } from '@/components/ProfileContext';
+
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
@@ -36,6 +38,7 @@ const HomeScreen: React.FC = () => {
   const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
   const [appState, setAppState] = useState(AppState.currentState);
   const [refreshOnResume, setRefreshOnResume] = useState(false);
+  const { profileData } = useProfile();
   const router = useRouter();
 
   const fetchNearbyEvents = async () => {
@@ -155,7 +158,10 @@ const HomeScreen: React.FC = () => {
 
         {/* Show current location */}
         <View style={styles.locationSelector}>
-          <Text style={styles.locationText}>Seattle, WA</Text>
+          <Text style={styles.locationText}>{
+            profileData.city && profileData.state 
+            ? `${profileData.city}, ${profileData.state}` 
+            : "Location not available"}</Text>
           <TouchableOpacity><Text style={styles.changeLink}>Change</Text></TouchableOpacity>
         </View>
 
