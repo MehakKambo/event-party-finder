@@ -1,9 +1,10 @@
 import React, { useEffect, useState, } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
 import axios from 'axios';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 
 import { useProfile } from '@/components/ProfileContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -46,7 +47,7 @@ const HomeScreen: React.FC = () => {
       const response = await axios.get(TICKETMASTER_API_URL, {
         params: {
           apikey: TICKETMASTER_API_KEY,
-          latlong: '47.6062,-122.3321', // Seattle
+          latlong: (profileData.latlong) ? profileData.latlong : '47.6062,-122.3321', // Seattle
           radius: 25,
           unit: 'miles',
           size: 10,
@@ -162,7 +163,9 @@ const HomeScreen: React.FC = () => {
             profileData.city && profileData.state 
             ? `${profileData.city}, ${profileData.state}` 
             : "Location not available"}</Text>
-          <TouchableOpacity><Text style={styles.changeLink}>Change</Text></TouchableOpacity>
+          <TouchableOpacity>
+              <Link style={styles.changeLink} href="/profile">Change</Link>
+          </TouchableOpacity>
         </View>
 
         {/* Event List */}
