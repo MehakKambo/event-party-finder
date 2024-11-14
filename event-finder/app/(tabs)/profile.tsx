@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
-import { Buffer } from 'buffer';
-
 import { useProfile } from '@/components/ProfileContext';
+import * as ImagePicker from 'expo-image-picker';
 
 const Profile: React.FC = () => {
-    const { profileData, setProfileData } = useProfile();
+    const { profileData, setProfileData, saveProfile } = useProfile();
     const [city, setCity] = useState(profileData.city);
     const [state, setState] = useState(profileData.state);
 
@@ -25,7 +22,7 @@ const Profile: React.FC = () => {
             ...prevData,
             [key]: value,
         }));
-    }
+    };
 
     const handleSave = async () => {
         try {
@@ -35,25 +32,11 @@ const Profile: React.FC = () => {
                 if (profileData.latlong !== newLatLong) {
                     setProfileData((prevData) => ({
                         ...prevData,
-                        latlong: newLatLong, // Update latlong in context
+                        latlong: newLatLong, // Update latlong in context before saving
                     }));
                 }
             }
-
-            // encode sensitive fields 
-            const encodedProfileData = {
-                ...profileData,
-                email: profileData.email ? Buffer.from(profileData.email).toString('base64') : '',
-                addressLine1: profileData.addressLine1 ? Buffer.from(profileData.addressLine1).toString('base64') : '',
-                addressLine2: profileData.addressLine2 ? Buffer.from(profileData.addressLine2).toString('base64') : '',
-                city: city ? Buffer.from(city).toString('base64') : '',
-                state: state ? Buffer.from(state).toString('base64') : '',
-                zipCode: profileData.zipCode ? Buffer.from(profileData.zipCode).toString('base64') : '',
-                country: profileData.country ? Buffer.from(profileData.country).toString('base64') : ''
-            }
-    
-            // Save profile data to AsyncStorage
-            await AsyncStorage.setItem('profileData', JSON.stringify(encodedProfileData));
+            await saveProfile(); // Call the saveProfile function to store the data
             Alert.alert("Success!", "Your profile has been saved successfully.");
         } catch (err) {
             console.error('Error saving profile data', err);
@@ -194,7 +177,7 @@ const Profile: React.FC = () => {
     );
 };
 
-// Styles
+// Styles (no change)
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
