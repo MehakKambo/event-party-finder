@@ -52,6 +52,26 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
         profilePic: null
     });
 
+    // Base64 Decoder helper
+    const decodeProfileData = (data: ProfileData): ProfileData => {
+        const decodedData: any = { ...data };
+        const fieldsToDecode = [
+            'email',
+            'addressLine1',
+            'addressLine2',
+            'city',
+            'state',
+            'zipCode',
+            'country'
+        ]
+        fieldsToDecode.forEach((field) => {
+            if (decodedData[field]) {
+                decodedData[field] = Buffer.from(decodedData[field], 'base64').toString('utf-8');
+            }
+        });
+        return decodedData;
+    }
+
     // Load the profile data from AsyncStorage on initial load
     useEffect(() => {
         const loadData = async () => {
@@ -59,7 +79,9 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
                 const savedData = await AsyncStorage.getItem('profileData');
                 if (savedData) {
                     const parsedData = JSON.parse(savedData);
-                    setProfileData(parsedData); // Set the context state
+                    // decode first
+                    const decodedData = decodeProfileData(parsedData);
+                    setProfileData(decodedData); // Set the context state
                 }
             } catch (err) {
                 console.error('Error loading profile data from AsyncStorage', err);
