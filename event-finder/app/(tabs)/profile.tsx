@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { Buffer } from 'buffer';
+
 import { useProfile } from '@/components/ProfileContext';
 
 const Profile: React.FC = () => {
@@ -37,9 +39,21 @@ const Profile: React.FC = () => {
                     }));
                 }
             }
+
+            // encode sensitive fields 
+            const encodedProfileData = {
+                ...profileData,
+                email: profileData.email ? Buffer.from(profileData.email).toString('base64') : '',
+                addressLine1: profileData.addressLine1 ? Buffer.from(profileData.addressLine1).toString('base64') : '',
+                addressLine2: profileData.addressLine2 ? Buffer.from(profileData.addressLine2).toString('base64') : '',
+                city: city ? Buffer.from(city).toString('base64') : '',
+                state: state ? Buffer.from(state).toString('base64') : '',
+                zipCode: profileData.zipCode ? Buffer.from(profileData.zipCode).toString('base64') : '',
+                country: profileData.country ? Buffer.from(profileData.country).toString('base64') : ''
+            }
     
             // Save profile data to AsyncStorage
-            await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+            await AsyncStorage.setItem('profileData', JSON.stringify(encodedProfileData));
             Alert.alert("Success!", "Your profile has been saved successfully.");
         } catch (err) {
             console.error('Error saving profile data', err);
