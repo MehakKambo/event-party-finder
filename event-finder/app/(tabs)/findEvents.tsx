@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ImageB
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 
+import { useProfile } from '@/components/ProfileContext';
+
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
@@ -36,6 +38,7 @@ const FindEventsScreen: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
+    const { profileData } = useProfile();
     const router = useRouter();
 
     // Fetch events from Ticketmaster API
@@ -128,7 +131,7 @@ const FindEventsScreen: React.FC = () => {
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Search Events in Seattle, WA</Text>
+                    <Text style={styles.title}>{`Search Events in ${profileData.city}, ${profileData.state}`}</Text>
                 </View>
 
                 {/* Search Bar */}
