@@ -4,38 +4,13 @@ import axios from 'axios';
 import { Link, useRouter } from 'expo-router';
 
 import { useProfile } from '@/components/ProfileContext';
+import { EventDetails } from '../../types/EventDetails';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
-interface Event {
-  id: number;
-  date: string;
-  name: string;
-  location: string;
-  description: string;
-  time?: string;
-  image: any;
-  url: string;
-  venue?: {
-    name: string;
-    address: {
-      line1: string;
-    };
-    city: {
-      name: string;
-    };
-    state: {
-      stateCode: string;
-    };
-    country: {
-      name: string;
-    };
-  };
-}
-
 const HomeScreen: React.FC = () => {
-  const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
+  const [nearbyEvents, setNearbyEvents] = useState<EventDetails[]>([]);
   const [appState, setAppState] = useState(AppState.currentState);
   const [refreshOnResume, setRefreshOnResume] = useState(false);
   const [cityState, setCityState] = useState<string>('');
@@ -103,7 +78,7 @@ const HomeScreen: React.FC = () => {
   
 
   // Pass event data to ViewEventScreen
-  const handleEventPress = (event: Event) => {
+  const handleEventPress = (event: EventDetails) => {
     router.push({
       pathname: '/viewEvent',
       params: { event: JSON.stringify(event) },
@@ -111,7 +86,7 @@ const HomeScreen: React.FC = () => {
   };
 
   // Render event card
-  const renderEvent = (event: Event) => {
+  const renderEvent = (event: EventDetails) => {
     const date = new Date(event.date + 'T' + event.time);
     const options: Intl.DateTimeFormatOptions = {
       weekday: 'long',
