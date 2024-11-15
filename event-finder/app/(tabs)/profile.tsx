@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
 import { useProfile } from '@/components/ProfileContext';
+import * as ImagePicker from 'expo-image-picker';
 
 const Profile: React.FC = () => {
-    const { profileData, setProfileData } = useProfile();
+    const { profileData, setProfileData, saveProfile } = useProfile();
     const [city, setCity] = useState(profileData.city);
     const [state, setState] = useState(profileData.state);
 
@@ -23,7 +22,7 @@ const Profile: React.FC = () => {
             ...prevData,
             [key]: value,
         }));
-    }
+    };
 
     const handleSave = async () => {
         try {
@@ -33,13 +32,11 @@ const Profile: React.FC = () => {
                 if (profileData.latlong !== newLatLong) {
                     setProfileData((prevData) => ({
                         ...prevData,
-                        latlong: newLatLong, // Update latlong in context
+                        latlong: newLatLong, // Update latlong in context before saving
                     }));
                 }
             }
-    
-            // Save profile data to AsyncStorage
-            await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+            await saveProfile(); // Call the saveProfile function to store the data
             Alert.alert("Success!", "Your profile has been saved successfully.");
         } catch (err) {
             console.error('Error saving profile data', err);
@@ -180,7 +177,7 @@ const Profile: React.FC = () => {
     );
 };
 
-// Styles
+// Styles (no change)
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,

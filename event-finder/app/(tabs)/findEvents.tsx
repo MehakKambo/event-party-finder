@@ -4,38 +4,13 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 
 import { useProfile } from '@/components/ProfileContext';
+import { EventDetails } from '@/types/EventDetails';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
-interface Event {
-    id: string;
-    date: string;
-    name: string;
-    location: string;
-    description: string;
-    time?: string;
-    image: any;
-    url: string;
-    venue?: {
-        name: string;
-        address: {
-            line1: string;
-        };
-        city: {
-            name: string;
-        };
-        state: {
-            stateCode: string;
-        };
-        country: {
-            name: string;
-        };
-    };
-}
-
 const FindEventsScreen: React.FC = () => {
-    const [events, setEvents] = useState<Event[]>([]);
+    const [events, setEvents] = useState<EventDetails[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const { profileData } = useProfile();
@@ -76,7 +51,7 @@ const FindEventsScreen: React.FC = () => {
     };
 
     // Pass event data to ViewEventScreen
-    const handleEventPress = (event: Event) => {
+    const handleEventPress = (event: EventDetails) => {
         router.push({
             pathname: '/viewEvent',
             params: { event: JSON.stringify(event), source: 'findEvents' },
@@ -85,7 +60,7 @@ const FindEventsScreen: React.FC = () => {
 
 
     // Render event card
-    const renderEvent = (event: Event) => {
+    const renderEvent = (event: EventDetails) => {
         // Format date and time from '2022-10-15T19:00:00' to 'Saturday, October 15, 2022 at 7:00 PM'
         const date = new Date(event.date + 'T' + event.time);
         const options: Intl.DateTimeFormatOptions = {

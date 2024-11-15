@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import base64 from 'react-native-base64';
 
 interface ProfileData {
     firstName: string;
@@ -52,17 +53,69 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
         profilePic: null
     });
 
+    // Base64 Decoder helper
+    const decodeProfileData = (data: ProfileData): ProfileData => {
+        const decodedData: any = { ...data };
+        const fieldsToDecode = [
+            'email',
+            'addressLine1',
+            'addressLine2',
+            'city',
+            'state',
+            'zipCode',
+            'country'
+        ]
+        fieldsToDecode.forEach((field) => {
+            if (decodedData[field]) {
+                decodeFromBase64WithSpaces(decodedData[field]);
+            }
+        });
+        return decodedData;
+    }
+
+    // Base64 Encoder helper
+    const encodeProfileData = (data: ProfileData): ProfileData => {
+        const encodedData: any = { ...data };
+        const fieldsToEncode = [
+            'email',
+            'addressLine1',
+            'addressLine2',
+            'city',
+            'state',
+            'zipCode',
+            'country'
+        ]
+        fieldsToEncode.forEach((field) => {
+            if (encodedData[field]) {
+                encodeToBase64WithSpaces(encodedData[field]);
+            }
+        });
+
+        return encodedData;
+    }
+
+    const encodeToBase64WithSpaces = (text: any) => {
+        const placeholder = "0SPACE0";
+        const sanitizedText = text.replace(/ /g, placeholder).replace(/[^A-Za-z0-9]/g, "");
+        return base64.encode(sanitizedText);
+    };
+    
+    const decodeFromBase64WithSpaces = (encodedText: any) => {
+    // Remove invalid base64 characters before decoding
+    const cleanedText = encodedText.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+    const decodedText = base64.decode(cleanedText);
+    return decodedText.replace(/0SPACE0/g, " ");
+    };
+
     // Load the profile data from AsyncStorage on initial load
     useEffect(() => {
         const loadData = async () => {
-            try {
-                const savedData = await AsyncStorage.getItem('profileData');
-                if (savedData) {
-                    const parsedData = JSON.parse(savedData);
-                    setProfileData(parsedData); // Set the context state
-                }
-            } catch (err) {
-                console.error('Error loading profile data from AsyncStorage', err);
+            const savedData = await AsyncStorage.getItem('profileData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                // decode first
+                const decodedData = decodeProfileData(parsedData);
+                setProfileData(decodedData); // Set the context state
             }
         };
     
@@ -97,26 +150,27 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // save and fetch latlong
     const saveProfile = async () => {
+        const encodedData: any = encodeProfileData(profileData);
         try {
             // Ensure latlong exists before saving profile
-            if (profileData.latlong) {
-                await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+            if (encodedData.latlong) {
+                await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));
                 return;
             }
 
-            if (profileData.city && profileData.state) {
-                const latlong = await fetchLatLong(profileData.city, profileData.state);
+            if (encodedData.city && encodedData.state) {
+                const latlong = await fetchLatLong(encodedData.city, encodedData.state);
 
                 if (latlong) {
                     setProfileData((prevData) => ({ ...prevData, latlong }));
-                    await AsyncStorage.setItem('profileData', JSON.stringify({ ...profileData, latlong }));
+                    await AsyncStorage.setItem('profileData', JSON.stringify({ ...encodedData, latlong }));
                 } else {
                     console.warn('Failed to fetch latlong, profile will be saved without it.');
-                    await AsyncStorage.setItem('profileData', JSON.stringify(profileData));  // Save without latlong
+                    await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));  // Save without latlong
                 }
             } else {
                 console.warn('City or state is missing. Cannot fetch or save latlong.');
-                await AsyncStorage.setItem('profileData', JSON.stringify(profileData));  // Save without latlong
+                await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));  // Save without latlong
             }
         } catch (error) {
             console.error('Error saving profile data:', error);

@@ -4,38 +4,14 @@ import axios from 'axios';
 import { Link, useRouter } from 'expo-router';
 
 import { useProfile } from '@/components/ProfileContext';
+import { EventDetails } from '../../types/EventDetails';
+import { FavoriteIcon } from '@/components/FavoriteIcon';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
-interface Event {
-  id: number;
-  date: string;
-  name: string;
-  location: string;
-  description: string;
-  time?: string;
-  image: any;
-  url: string;
-  venue?: {
-    name: string;
-    address: {
-      line1: string;
-    };
-    city: {
-      name: string;
-    };
-    state: {
-      stateCode: string;
-    };
-    country: {
-      name: string;
-    };
-  };
-}
-
 const HomeScreen: React.FC = () => {
-  const [nearbyEvents, setNearbyEvents] = useState<Event[]>([]);
+  const [nearbyEvents, setNearbyEvents] = useState<EventDetails[]>([]);
   const [appState, setAppState] = useState(AppState.currentState);
   const [refreshOnResume, setRefreshOnResume] = useState(false);
   const [cityState, setCityState] = useState<string>('');
@@ -63,6 +39,7 @@ const HomeScreen: React.FC = () => {
         image: { uri: event.images[0].url },
         url: event.url,
         venue: event._embedded?.venues[0],
+        isFavorited: false
       })) || [];
       setNearbyEvents(events);
     } catch (error) {
@@ -103,15 +80,23 @@ const HomeScreen: React.FC = () => {
   
 
   // Pass event data to ViewEventScreen
-  const handleEventPress = (event: Event) => {
+  const handleEventPress = (event: EventDetails) => {
     router.push({
       pathname: '/viewEvent',
       params: { event: JSON.stringify(event) },
     });
   };
 
+  const toggleFavorite = (eventId: number) => {
+    setNearbyEvents(prevEvents =>
+      prevEvents.map(event =>
+        event.id === eventId ? { ...event, isFavorited: !event.isFavorited } : event
+      )
+    );
+  };
+
   // Render event card
-  const renderEvent = (event: Event) => {
+  const renderEvent = (event: EventDetails) => {
     const date = new Date(event.date + 'T' + event.time);
     const options: Intl.DateTimeFormatOptions = {
       weekday: 'long',
@@ -143,6 +128,10 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.eventLocation}>{location}</Text>
           </View>
         </View>
+        <FavoriteIcon
+          isFavorited={event.isFavorited ?? false}
+          onPress={() => toggleFavorite(event.id)}
+        />
       </TouchableOpacity>
     );
   };
@@ -208,10 +197,17 @@ const styles = StyleSheet.create({
   eventCard: {
     flexDirection: 'row',
     padding: 10,
+    paddingRight: 40,
     marginVertical: 8,
     backgroundColor: '#1a1a1a',
     borderRadius: 10,
     alignItems: 'center',
+    position: 'relative'
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    right: 10,
+    top: '50%', 
   },
   eventContent: {
     flexDirection: 'row',
@@ -222,6 +218,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 10,
+    paddingRight: 30
   },
   eventDetails: {
     flex: 1,
