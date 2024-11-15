@@ -7,7 +7,7 @@ interface FavoriteIconProps {
   onPress: () => void;
 }
 
-const FavoriteIcon: React.FC<FavoriteIconProps> = ({ isFavorited, onPress }) => {
+export const FavoriteIcon: React.FC<FavoriteIconProps> = ({ isFavorited, onPress }) => {
   return (
     <TouchableOpacity onPress={onPress}>
       <Ionicons
