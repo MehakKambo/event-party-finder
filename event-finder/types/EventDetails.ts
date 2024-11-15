@@ -22,4 +22,5 @@ export interface EventDetails {
        name: string;
      };
    };
+   isFavorited?: boolean
  }
