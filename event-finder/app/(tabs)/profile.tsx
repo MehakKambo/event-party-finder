@@ -11,6 +11,7 @@ const Profile: React.FC = () => {
     const [state, setState] = useState(profileData.state);
     const { signOut, user } = useSession();
 
+
     // Function to get latlong from city and state
     const getLatLongFromCityState = async (city: string, state: string) => {
         const response = await fetch(`https://photon.komoot.io/api/?q=${city},${state}`);
@@ -26,12 +27,11 @@ const Profile: React.FC = () => {
             [key]: value,
         }));
     };
-
+  
     const handleLogout = async () => {
         await signOut();
         router.replace("/sign-in");
     };
-
 
     const handleSave = async () => {
         try {

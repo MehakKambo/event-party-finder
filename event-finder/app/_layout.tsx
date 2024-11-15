@@ -9,6 +9,8 @@ import { ProfileProvider } from '@/components/ProfileContext';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+import { ProfileProvider } from '@/components/ProfileContext';
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
