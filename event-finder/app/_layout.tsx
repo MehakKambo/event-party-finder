@@ -4,6 +4,9 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { SessionProvider } from '@/context';
+import { ProfileProvider } from '@/components/ProfileContext';
+
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 import { ProfileProvider } from '@/components/ProfileContext';
@@ -28,13 +31,15 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <SessionProvider>
       <ProfileProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </ThemeProvider>
       </ProfileProvider>
-    </ThemeProvider>
+    </SessionProvider>
   );
 }

@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
+import { useSession } from '@/context';
 
 const Profile: React.FC = () => {
     const { profileData, setProfileData, saveProfile } = useProfile();
     const [city, setCity] = useState(profileData.city);
     const [state, setState] = useState(profileData.state);
+    const { signOut, user } = useSession();
+
 
     // Function to get latlong from city and state
     const getLatLongFromCityState = async (city: string, state: string) => {
@@ -22,6 +26,11 @@ const Profile: React.FC = () => {
             ...prevData,
             [key]: value,
         }));
+    };
+  
+    const handleLogout = async () => {
+        await signOut();
+        router.replace("/sign-in");
     };
 
     const handleSave = async () => {
@@ -83,6 +92,11 @@ const Profile: React.FC = () => {
             {/* Profile Information */}
             <View style={styles.infoContainer}>
                 <Text style={styles.infoHeader}>Personal Information</Text>
+
+
+                <TouchableOpacity style={styles.saveButton} onPress={handleLogout}>
+                    <Text style={styles.saveButtonText}>Log Out</Text>
+                </TouchableOpacity>
 
                 <Text style={styles.infoLabel}>First Name:</Text>
                 <TextInput
