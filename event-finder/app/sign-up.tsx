@@ -1,31 +1,53 @@
 import { router, Link } from "expo-router";
-import { Text, TextInput, View, Pressable, StyleSheet } from "react-native";
+import { Text, TextInput, View, Pressable, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { useSession } from "@/context";
+import Icon from "react-native-vector-icons/Ionicons";
+import { db, auth } from '@/lib/firebase-config';
+import { setDoc, doc } from 'firebase/firestore';
 
-/**
- * SignUp component handles new user registration
- * @returns {JSX.Element} Sign-up form component
- */
 export default function SignUp() {
     // ============================================================================
     // Hooks & State
     // ============================================================================
 
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [name, setName] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordVisible, setPasswordVisible] = useState(false); 
+    const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
     const { signUp } = useSession();
 
-    // ============================================================================
+    /// ============================================================================
     // Handlers
-    // ============================================================================
+    // =============================================================================
 
-    /**
-     * Handles the registration process
-     * @returns {Promise<Models.User<Models.Preferences> | null>}
-     */
+    
+    const validatePassword = (password: string) => {
+        const passwordRegex =
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+        return passwordRegex.test(password);
+    };
+
     const handleRegister = async () => {
+        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+            Alert.alert("Error", "All fields are required.");
+            return null;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert("Error", "Passwords do not match.");
+            return null;
+        }
+        if (!validatePassword(password)) {
+            Alert.alert(
+                "Error",
+                "Password must be at least 6 characters long and include one uppercase letter, one lowercase letter, one number, and one special character."
+            );
+            return null;
+        }
+        const name = `${firstName} ${lastName}`;
         try {
             return await signUp(email, password, name);
         } catch (err) {
@@ -34,14 +56,32 @@ export default function SignUp() {
         }
     };
 
-    /**
-     * Handles the sign-up button press
-     */
+    const saveUserToFirestore = async (uid: string) => {
+        try {
+            const userDocRef = doc(db, "users", uid); // Use uid as document ID
+            await setDoc(userDocRef, {
+                firstName,
+                lastName,
+                email,
+                createdAt: new Date().toISOString(),
+            });
+            console.log("User saved to Firestore successfully");
+        } catch (err) {
+            console.error("Error saving user to Firestore:", err);
+            Alert.alert("Error", "Unable to save user data.");
+        }
+    };
+
     const handleSignUpPress = async () => {
         const response = await handleRegister();
         if (response) {
-            router.replace({ pathname: "/(tabs)/home" });
-            
+            const uid = auth.currentUser?.uid;
+            if (uid) {
+                await saveUserToFirestore(uid); // Save user to Firestore
+                router.replace("/preferences");
+            } else {
+                Alert.alert("Error", "User ID not found after signup.");
+            }
         }
     };
 
@@ -51,58 +91,88 @@ export default function SignUp() {
 
     return (
         <View style={styles.container}>
-            {/* Welcome Section */}
             <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeText}>Create Account</Text>
+                <Text style={styles.welcomeText}>Create Your {process.env.EXPO_PUBLIC_APP_NAME} Account</Text>
                 <Text style={styles.subText}>Sign up to get started</Text>
             </View>
-
-            {/* Form Section */}
             <View style={styles.formSection}>
                 <View>
-                    <Text style={styles.labelText}>Name</Text>
+                    <Text style={styles.labelText}>First Name*</Text>
                     <TextInput
-                        placeholder="Your full name"
-                        value={name}
-                        onChangeText={setName}
-                        textContentType="name"
-                        autoCapitalize="words"
+                        placeholder="First Name"
+                        value={firstName}
+                        onChangeText={setFirstName}
                         style={styles.input}
                     />
                 </View>
-
                 <View>
-                    <Text style={styles.labelText}>Email</Text>
+                    <Text style={styles.labelText}>Last Name*</Text>
+                    <TextInput
+                        placeholder="Last Name"
+                        value={lastName}
+                        onChangeText={setLastName}
+                        style={styles.input}
+                    />
+                </View>
+                <View>
+                    <Text style={styles.labelText}>Email*</Text>
                     <TextInput
                         placeholder="name@mail.com"
                         value={email}
                         onChangeText={setEmail}
-                        textContentType="emailAddress"
                         keyboardType="email-address"
                         autoCapitalize="none"
                         style={styles.input}
                     />
                 </View>
-
                 <View>
-                    <Text style={styles.labelText}>Password</Text>
-                    <TextInput
-                        placeholder="Create a password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        textContentType="newPassword"
-                        style={styles.input}
-                    />
+                    <Text style={styles.labelText}>Password*</Text>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            placeholder="Create a password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!passwordVisible}
+                            style={styles.textInput}
+                        />
+                        <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.iconContainer}>
+                            <Icon
+                                name={passwordVisible ? "eye-off" : "eye"}
+                                size={20}
+                                color="#888"
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <View>
+                    <Text style={styles.labelText}>Confirm Password*</Text>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={!confirmPasswordVisible}
+                            style={[styles.textInput]}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                        >
+                            <Icon
+                                name={confirmPasswordVisible ? "eye-off" : "eye"}
+                                size={20}
+                                color="#888"
+                                style={styles.eyeIcon}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <View>
+                    <Text style={styles.labelText}>* Required</Text>
                 </View>
             </View>
-
-            {/* Sign Up Button */}
             <Pressable onPress={handleSignUpPress} style={styles.signUpButton}>
                 <Text style={styles.signUpButtonText}>Sign Up</Text>
             </Pressable>
-
-            {/* Sign In Link */}
             <View style={styles.signInLinkContainer}>
                 <Text style={styles.signInText}>Already have an account?</Text>
                 <Link href=".." asChild>
@@ -141,6 +211,25 @@ const styles = StyleSheet.create({
         maxWidth: 300,
         marginBottom: 32,
     },
+    inputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        width: "100%",
+        maxWidth: 300,
+        borderWidth: 1,
+        borderColor: "#cccccc",
+        borderRadius: 8,
+        backgroundColor: "#ffffff",
+        marginBottom: 16,
+    },
+    textInput: {
+        flex: 1,
+        padding: 12,
+        fontSize: 16,
+    },
+    iconContainer: {
+        padding: 12,
+    },
     labelText: {
         fontSize: 14,
         fontWeight: '500',
@@ -157,6 +246,16 @@ const styles = StyleSheet.create({
         fontSize: 16,
         backgroundColor: '#ffffff',
         marginBottom: 16,
+    },
+    passwordContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    passwordInput: {
+        flex: 1,
+    },
+    eyeIcon: {
+        padding: 8,
     },
     signUpButton: {
         backgroundColor: '#1e90ff',
