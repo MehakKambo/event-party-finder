@@ -53,7 +53,7 @@ export default function SignIn() {
         <View style={styles.container}>
             {/* Welcome Section */}
             <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeText}>Welcome Back</Text>
+                <Text style={styles.welcomeText}>Welcome Back To {process.env.EXPO_PUBLIC_APP_NAME}</Text>
                 <Text style={styles.subText}>Please sign in to continue</Text>
             </View>
 
@@ -83,6 +83,9 @@ export default function SignIn() {
                         style={styles.input}
                     />
                 </View>
+                <Link href="../reset-password" asChild>
+                    <Text style={styles.signUpLinkText}>Forgot your password?</Text>
+                </Link>
             </View>
 
             {/* Sign In Button */}
@@ -93,7 +96,7 @@ export default function SignIn() {
             {/* Sign Up Link */}
             <View style={styles.signUpLinkContainer}>
                 <Text style={styles.signUpText}>Don't have an account?</Text>
-                <Link href="/sign-up" asChild>
+                <Link href="../sign-up" asChild>
                     <Pressable style={styles.signUpPressable}>
                         <Text style={styles.signUpLinkText}>Sign Up</Text>
                     </Pressable>
