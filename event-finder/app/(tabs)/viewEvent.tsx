@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ViewEvent: React.FC = () => {
     const router = useRouter();
@@ -29,32 +29,34 @@ const ViewEvent: React.FC = () => {
     };
 
     return (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
-            {/* Header Section */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={styles.backArrow}>←</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+                {/* Header Section */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Text style={styles.backArrow}>←</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Event Date and Image */}
+                <View style={styles.eventDetails}>
+                    <Text style={styles.eventDetails}>Event Details</Text>
+                    <Image source={parsedEvent?.image} style={styles.eventImage} />
+                </View>
+
+                {/* Event Information */}
+                <View style={styles.eventInfoContainer}>
+                    <Text style={styles.eventName}>{parsedEvent?.name}</Text>
+                    <Text style={styles.eventDate}>{parsedEvent?.date}</Text>
+                    <Text style={styles.eventDescription}>{parsedEvent?.description}</Text>
+                </View>
+
+                {/* RSVP Button (opens event URL) */}
+                <TouchableOpacity style={styles.rsvpButton} onPress={handleRSVP}>
+                    <Text style={styles.buttonText}>Get Tickets</Text>
                 </TouchableOpacity>
-            </View>
-
-            {/* Event Date and Image */}
-            <View style={styles.eventDetails}>
-                <Text style={styles.eventDetails}>Event Details</Text>
-                <Image source={parsedEvent?.image} style={styles.eventImage} />
-            </View>
-
-            {/* Event Information */}
-            <View style={styles.eventInfoContainer}>
-                <Text style={styles.eventName}>{parsedEvent?.name}</Text>
-                <Text style={styles.eventDate}>{parsedEvent?.date}</Text>
-                <Text style={styles.eventDescription}>{parsedEvent?.description}</Text>
-            </View>
-
-            {/* RSVP Button (opens event URL) */}
-            <TouchableOpacity style={styles.rsvpButton} onPress={handleRSVP}>
-                <Text style={styles.buttonText}>Get Tickets</Text>
-            </TouchableOpacity>
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 

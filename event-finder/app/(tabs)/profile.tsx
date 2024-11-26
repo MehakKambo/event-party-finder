@@ -6,6 +6,7 @@ import { db, auth } from '@/lib/firebase-config';
 import { useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
@@ -14,7 +15,7 @@ const Profile: React.FC = () => {
     const [fetchedProfile, setFetchedProfile] = useState<any>(null);
 
     const uid = auth.currentUser?.uid;
-    
+
     // Fetch user profile data from Firestore
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -39,6 +40,7 @@ const Profile: React.FC = () => {
                         city: "Not available currently",
                         state: "Not available currently",
                         zipCode: "Not available currently",
+                        preferences: [],
                     });
                 }
             } catch (err) {
@@ -56,6 +58,7 @@ const Profile: React.FC = () => {
         await signOut();
     };
 
+    // Pick an image from the device's gallery
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
@@ -88,75 +91,84 @@ const Profile: React.FC = () => {
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            {/* Profile Picture */}
-            <View style={styles.profilePicContainer}>
-                <Image
-                    source={
-                        profileData.profilePic
-                            ? { uri: profileData.profilePic }
-                            : require('../../assets/images/profile.png')
-                    }
-                    style={styles.profilePic}
-                />
-                <TouchableOpacity onPress={pickImage}>
-                    <Text style={styles.changeLink}>Change</Text>
-                </TouchableOpacity>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+            <ScrollView contentContainerStyle={styles.container}>
+                {/* Profile Picture */}
+                <View style={styles.profilePicContainer}>
+                    <Image
+                        source={
+                            profileData.profilePic
+                                ? { uri: profileData.profilePic }
+                                : require('../../assets/images/profile.png')
+                        }
+                        style={styles.profilePic}
+                    />
+                    <TouchableOpacity onPress={pickImage}>
+                        <Text style={styles.changeLink}>Change</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={styles.saveButton} onPress={handleLogout}>
-                    <Text style={styles.saveButtonText}>Log Out</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity style={styles.saveButton} onPress={handleLogout}>
+                        <Text style={styles.saveButtonText}>Log Out</Text>
+                    </TouchableOpacity>
+                </View>
 
-            {/* Profile Information */}
-            <View style={styles.infoContainer}>
-                <Text style={styles.infoHeader}>Personal Information</Text>
+                {/* Profile Information */}
+                <View style={styles.infoContainer}>
+                    <Text style={styles.infoHeader}>Personal Information</Text>
 
-                <Text style={styles.infoLabel}>First Name:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.firstName || "Not available currently"}
-                    editable={false}
-                />
+                    <Text style={styles.infoLabel}>First Name:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.firstName || "Not available currently"}
+                        editable={false}
+                    />
 
-                <Text style={styles.infoLabel}>Last Name:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.lastName || "Not available currently"}
-                    editable={false}
-                />
+                    <Text style={styles.infoLabel}>Last Name:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.lastName || "Not available currently"}
+                        editable={false}
+                    />
 
-                <Text style={styles.infoLabel}>Email Address:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.email || "Not available currently"}
-                    editable={false}
-                />
+                    <Text style={styles.infoLabel}>Email Address:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.email || "Not available currently"}
+                        editable={false}
+                    />
 
-                <Text style={styles.infoHeader}>Address Information</Text>
+                    <Text style={styles.infoHeader}>Preferences</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.preferences?.join(', ') || "Not available currently"}
+                        editable={false}
+                    />
 
-                <Text style={styles.infoLabel}>City:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.city || "Not available currently"}
-                    editable={false}
-                />
+                    <Text style={styles.infoHeader}>Address Information</Text>
 
-                <Text style={styles.infoLabel}>State:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.state || "Not available currently"}
-                    editable={false}
-                />
+                    <Text style={styles.infoLabel}>City:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.city || "Not available currently"}
+                        editable={false}
+                    />
 
-                <Text style={styles.infoLabel}>Zip Code:</Text>
-                <TextInput
-                    style={styles.textInput}
-                    value={fetchedProfile?.zipCode || "Not available currently"}
-                    editable={false}
-                />
-            </View>
-        </ScrollView>
+                    <Text style={styles.infoLabel}>State:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.state || "Not available currently"}
+                        editable={false}
+                    />
+
+                    <Text style={styles.infoLabel}>Zip Code:</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={fetchedProfile?.zipCode || "Not available currently"}
+                        editable={false}
+                    />
+                </View>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
@@ -165,11 +177,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         padding: 20,
-        paddingTop: 50,
         backgroundColor: '#f9f9f9',
     },
     profilePicContainer: {
-        marginVertical: 20,
         alignItems: 'center',
     },
     profilePic: {

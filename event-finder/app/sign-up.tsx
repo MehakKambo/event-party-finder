@@ -78,7 +78,7 @@ export default function SignUp() {
             const uid = auth.currentUser?.uid;
             if (uid) {
                 await saveUserToFirestore(uid); // Save user to Firestore
-                router.replace("/preferences");
+                router.replace("/location");
             } else {
                 Alert.alert("Error", "User ID not found after signup.");
             }

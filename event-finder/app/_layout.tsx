@@ -6,10 +6,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { SessionProvider } from '@/context';
 import { ProfileProvider } from '@/components/ProfileContext';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-import { ProfileProvider } from '@/components/ProfileContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -37,6 +35,7 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />
+            <Stack.Screen name="location" options={{ headerShown: false }} />
             <Stack.Screen name="preferences" options={{ headerShown: false }} />
             <Stack.Screen name="reset-password" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
