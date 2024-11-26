@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
 import axios from 'axios';
 import { Link, useRouter } from 'expo-router';
-
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '../../types/EventDetails';
 import { FavoriteIcon } from '@/components/FavoriteIcon';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -138,23 +138,25 @@ const HomeScreen: React.FC = () => {
 
   return (
     <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Recommended Events Near You</Text>
-        </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Recommended Events Near You</Text>
+          </View>
 
-        <View style={styles.locationSelector}>
-          <Text style={styles.locationText}>
-            {cityState || (profileData.city && profileData.state ? `${profileData.city}, ${profileData.state}` : 'Location not available')}
-          </Text>
-          <TouchableOpacity>
-            <Link style={styles.changeLink} href="/profile">Change</Link>
-          </TouchableOpacity>
+          <View style={styles.locationSelector}>
+            <Text style={styles.locationText}>
+              {cityState || (profileData.city && profileData.state ? `${profileData.city}, ${profileData.state}` : 'Location not available')}
+            </Text>
+            <TouchableOpacity>
+              <Link style={styles.changeLink} href="/profile">Change</Link>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.eventList}>
+            {nearbyEvents.map((event) => renderEvent(event))}
+          </ScrollView>
         </View>
-        <ScrollView contentContainerStyle={styles.eventList}>
-          {nearbyEvents.map((event) => renderEvent(event))}
-        </ScrollView>
-      </View>
+      </SafeAreaView>
     </ImageBackground>
   );
 };
@@ -168,7 +170,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginTop: 40,
     flexDirection: 'column',
     alignItems: 'center',
   },

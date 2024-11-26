@@ -16,7 +16,8 @@ interface ProfileData {
     zipCode: string;
     country: string;
     profilePic: string | null;
-    latlong?: string
+    latlong?: string,
+    preferences?: string[]
 }
 
 const ProfileContext = createContext<{

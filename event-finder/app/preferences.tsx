@@ -7,60 +7,61 @@ import {
   FlatList,
   Alert,
 } from "react-native";
-import * as Location from "expo-location";
 import { useSession } from "@/context";
 import { db } from "@/lib/firebase-config";
 import { doc, updateDoc } from "firebase/firestore";
 import { Redirect, router } from "expo-router";
 import { predefinedKeywords } from "@/constants/keywords";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Preferences() {
+  // ============================================================================
+  // Constants
+  // ============================================================================
+  const PREFERENCES_LIMIT = 8; // Maximum number of preferences a user can select
+
   // ============================================================================
   // Hooks & State
   // ============================================================================
   const { user } = useSession();
-  const [location, setLocation] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   // ============================================================================
   // Handlers
   // ============================================================================
-
   const toggleKeyword = (keyword: string) => {
-    setSelectedKeywords((prevKeywords) =>
-      prevKeywords.includes(keyword)
-        ? prevKeywords.filter((k) => k !== keyword)
-        : [...prevKeywords, keyword]
-    );
-  };
-
-  const requestLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "Location access is required.");
-      return;
+    if (selectedKeywords.includes(keyword)) {
+      // Remove the keyword if already selected
+      setSelectedKeywords((prevKeywords) =>
+        prevKeywords.filter((k) => k !== keyword)
+      );
+    } else if (selectedKeywords.length < PREFERENCES_LIMIT) {
+      // Add the keyword if the limit is not exceeded
+      setSelectedKeywords((prevKeywords) => [...prevKeywords, keyword]);
+    } else {
+      // Notify the user when the limit is reached
+      Alert.alert(
+        "Limit Reached",
+        `You can select a maximum of ${PREFERENCES_LIMIT} preferences.`
+      );
     }
-    const locationData = await Location.getCurrentPositionAsync({});
-    const latlong = `${locationData.coords.latitude},${locationData.coords.longitude}`;
-    setLocation(latlong);
   };
 
   const savePreferences = async () => {
-    if (!user?.uid) {
-      Alert.alert("Error", "User not authenticated.");
-      return <Redirect href="/sign-in" />;
-    }
-
-    if (!location) {
-      Alert.alert("Error", "Location is not set. Please allow location access.");
+    if (selectedKeywords.length === 0) {
+      Alert.alert("Error", "Please select at least one preference.");
       return;
+    }
+    
+    if (!user?.uid) {
+      Alert.alert("Error", "User not authenticated. Sign in to save preferences.");
+      return <Redirect href="/sign-in" />;
     }
 
     try {
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, {
         preferences: selectedKeywords,
-        latlong: location,
       });
       Alert.alert("Success", "Preferences saved successfully.");
       router.replace({ pathname: "/(tabs)/home" });
@@ -102,48 +103,42 @@ export default function Preferences() {
   // ============================================================================
   // Render
   // ============================================================================
-
   return (
-    <FlatList
-      ListHeaderComponent={
-        <View style={styles.section}>
-          <Text style={styles.title}>Set Your Location</Text>
-          <Text>Current Location: {location ? location : "Not Available"}</Text>
-          <TouchableOpacity style={styles.button} onPress={requestLocationPermission}>
-            <Text style={styles.buttonText}>Get Location</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+      <FlatList
+        ListHeaderComponent={
+          <View style={styles.section}>
+            <Text style={styles.title}>Set Event Preferences</Text>
+            <Text style={styles.title2}>Choose the keywords that best describe your interests:</Text>
+            <Text style={styles.subtitle}>
+              (You can select up to {PREFERENCES_LIMIT} preferences)
+            </Text>
+          </View>
+        }
+        data={predefinedKeywords}
+        keyExtractor={(item) => item.category}
+        renderItem={renderKeywordCategory}
+        ListFooterComponent={
+          <TouchableOpacity style={styles.saveButton} onPress={savePreferences}>
+            <Text style={styles.saveButtonText}>Save Preferences</Text>
           </TouchableOpacity>
-
-          <Text style={styles.title2}>Select Your Preferences</Text>
-          <Text>Choose the keywords that best describe your interests:</Text>
-          <Text style={styles.subtitle}>
-            (You will be able to add custom keywords later under profile settings.)
-          </Text>
-        </View>
-      }
-      data={predefinedKeywords}
-      keyExtractor={(item) => item.category}
-      renderItem={renderKeywordCategory}
-      ListFooterComponent={
-        <TouchableOpacity style={styles.saveButton} onPress={savePreferences}>
-          <Text style={styles.saveButtonText}>Save Preferences</Text>
-        </TouchableOpacity>
-      }
-      contentContainerStyle={styles.container}
-    />
+        }
+        contentContainerStyle={styles.container}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    paddingTop: 70,
     backgroundColor: "#f9f9f9",
   },
   section: {
     marginBottom: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: 32,
     fontWeight: "bold",
     marginBottom: 10,
   },

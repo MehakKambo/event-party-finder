@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ImageBackground } from 'react-native';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '@/types/EventDetails';
 
@@ -104,34 +104,36 @@ const FindEventsScreen: React.FC = () => {
 
     return (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>{`Search Events in ${profileData.city}, ${profileData.state}`}</Text>
-                </View>
+            <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>{`Search Events in ${profileData.city}, ${profileData.state}`}</Text>
+                    </View>
 
-                {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search for concerts, sports, dance, tech etc."
-                        placeholderTextColor="#000000"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        onSubmitEditing={fetchEvents}
-                    />
-                </View>
+                    {/* Search Bar */}
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search for concerts, sports, dance, tech etc."
+                            placeholderTextColor="#000000"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            onSubmitEditing={fetchEvents}
+                        />
+                    </View>
 
-                {/* Events List */}
-                <ScrollView contentContainerStyle={styles.eventList}>
-                    {loading ? (
-                        <Text style={styles.loadingText}>Loading...</Text>
-                    ) : events.length > 0 ? (
-                        events.map((event) => renderEvent(event))
-                    ) : (
-                        <Text style={styles.noEventsText}>No events found</Text>
-                    )}
-                </ScrollView>
-            </View>
+                    {/* Events List */}
+                    <ScrollView contentContainerStyle={styles.eventList}>
+                        {loading ? (
+                            <Text style={styles.loadingText}>Loading...</Text>
+                        ) : events.length > 0 ? (
+                            events.map((event) => renderEvent(event))
+                        ) : (
+                            <Text style={styles.noEventsText}>No events found</Text>
+                        )}
+                    </ScrollView>
+                </View>
+            </SafeAreaView>
         </ImageBackground>
     );
 };
@@ -145,7 +147,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        marginTop: 40,
         flexDirection: 'column',
         alignItems: 'baseline',
     },
