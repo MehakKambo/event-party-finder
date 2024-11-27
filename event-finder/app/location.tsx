@@ -16,6 +16,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { router } from "expo-router";
 import * as Location from "expo-location";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useLocation } from "@/components/LocationContext";
 
 export default function LocationSetup() {
   // ============================================================================
@@ -24,10 +25,8 @@ export default function LocationSetup() {
   const { user } = useSession();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [latlong, setLatLong] = useState<string | null>(null);
+  const { latlong, city, state, setLocation } = useLocation();
+  const [zipCode, setZipCode] = useState('');
   const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEO_API_KEY;
   const UNKNOWN_CITY = "Unknown City";
   const UNKNOWN_STATE = "Unknown State";
@@ -44,12 +43,12 @@ export default function LocationSetup() {
         const locationData = await Location.getCurrentPositionAsync({});
         const lat = locationData.coords.latitude;
         const lon = locationData.coords.longitude;
-        setLatLong(`${lat},${lon}`);
         fetchLocationFromLatLong(lat, lon);
+        setLocation(`${lat},${lon}`, UNKNOWN_CITY, UNKNOWN_STATE);
       }
     };
     requestLocationPermission();
-  }, []);
+  }, [setLocation]);
 
   // ============================================================================
   // Handlers
@@ -64,8 +63,7 @@ export default function LocationSetup() {
       const data = await response.json();
       if (data.features && data.features.length > 0) {
         const place = data.features[0].properties;
-        setCity(place.city || UNKNOWN_CITY);
-        setState(place.state || UNKNOWN_STATE);
+        setLocation(`${lat},${lon}`, place.city || UNKNOWN_CITY, place.state || UNKNOWN_STATE);
         setZipCode(place.postcode || UNKNOWN_ZIP);
         Alert.alert("Success", `Location set to: ${place.city}, ${place.state}`);
       } else throw new Error("No valid data found.");
@@ -98,9 +96,7 @@ export default function LocationSetup() {
   const onSelectSuggestion = (item: any) => {
     setQuery(item.formatted);
     setSuggestions([]);
-    setLatLong(`${item.lat},${item.lon}`);
-    setCity(item.city || UNKNOWN_CITY);
-    setState(item.state || UNKNOWN_STATE);
+    setLocation(`${item.lat},${item.lon}`, item.city || UNKNOWN_CITY, item.state || UNKNOWN_STATE);
     setZipCode(item.postcode || UNKNOWN_ZIP);
     Keyboard.dismiss();
   };

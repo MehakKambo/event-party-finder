@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import base64 from 'react-native-base64';
+import { useLocation } from './LocationContext';
 
 interface ProfileData {
     firstName: string;
@@ -16,14 +17,13 @@ interface ProfileData {
     zipCode: string;
     country: string;
     profilePic: string | null;
-    latlong?: string,
+    latlong?: string | null,
     preferences?: string[]
 }
 
 const ProfileContext = createContext<{
     profileData: ProfileData;
     setProfileData: React.Dispatch<React.SetStateAction<ProfileData>>;
-    fetchLatLong: (city: string, state: string) => void;
     saveProfile: () => Promise<void>
  } | undefined>(undefined);
 
@@ -39,6 +39,8 @@ export const useProfile = () => {
 const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 
 export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    // Access location data from LocationProvider
+    const { city, state, latlong } = useLocation();
     const [profileData, setProfileData] = useState<ProfileData>({
         firstName: 'Lotta B.',
         lastName: 'Essen',
@@ -47,12 +49,15 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
         email: 'john.doe@example.com',
         addressLine1: '123 Main Street',
         addressLine2: 'Apartment 4B',
-        city: 'New York',
-        state: 'NY',
+        city: city,
+        state: state,
         zipCode: '10001',
         country: 'USA',
-        profilePic: null
+        profilePic: null,
+        latlong: latlong
     });
+
+
 
     // Base64 Decoder helper
     const decodeProfileData = (data: ProfileData): ProfileData => {
@@ -180,18 +185,26 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     // Track changes in city or state to update latlong
     useEffect(() => {
+        // update profile when location changes
+        setProfileData((prevData) => ({
+            ...prevData,
+            city: city,
+            state: state,
+            latlong: latlong, 
+        }));
+
         const updateLatLong = async () => {
             await saveProfile(); // This will re-fetch latlong whenever city/state changes
         };
     
-        if (profileData.city && profileData.state) {
+        if (city && state) {
             updateLatLong(); // Ensure latlong is updated whenever the city/state changes
         }
-    }, [profileData.city, profileData.state]); // Trigger when city or state changes
+    }, [city, state, latlong]); // Trigger when city or state changes
     
 
     return (
-        <ProfileContext.Provider value={{ profileData, setProfileData, fetchLatLong, saveProfile }}>
+        <ProfileContext.Provider value={{ profileData, setProfileData, saveProfile }}>
             {children}
         </ProfileContext.Provider>
     );
