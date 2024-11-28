@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ImageBackground } from 'react-native';
 import axios from 'axios';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '@/types/EventDetails';
+import ViewEvent from '@/components/viewEvent';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -14,7 +14,7 @@ const FindEventsScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const { profileData } = useProfile();
-    const router = useRouter();
+    const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
 
     // Fetch events from Ticketmaster API
     const fetchEvents = async () => {
@@ -52,10 +52,7 @@ const FindEventsScreen: React.FC = () => {
 
     // Pass event data to ViewEventScreen
     const handleEventPress = (event: EventDetails) => {
-        router.push({
-            pathname: '/viewEvent',
-            params: { event: JSON.stringify(event), source: 'findEvents' },
-        });
+        setSelectedEvent(event);
     };
 
 
@@ -102,7 +99,12 @@ const FindEventsScreen: React.FC = () => {
         );
     };
 
-    return (
+    return selectedEvent ? (
+        <ViewEvent
+          event={selectedEvent}
+          onBack={() => setSelectedEvent(null)}
+        />
+      ) : (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
             <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
                 <View style={styles.container}>
