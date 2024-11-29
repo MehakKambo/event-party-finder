@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Switch } from 'react-native';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useSession } from '@/context';
 import { db, auth } from '@/lib/firebase-config';
-import { useProfile } from '@/components/ProfileContext';
+import { ProfileData, useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
-    const { profileData, setProfileData, saveProfile } = useProfile();
+    const { profileData, setProfileData } = useProfile();
     const [loading, setLoading] = useState(true);
     const [fetchedProfile, setFetchedProfile] = useState<any>(null);
+    const [manualLocation, setManualLocation] = useState(false);
 
     const uid = auth.currentUser?.uid;
 
@@ -31,6 +32,8 @@ const Profile: React.FC = () => {
 
                 if (userDoc.exists()) {
                     setFetchedProfile(userDoc.data());
+                    const data = userDoc.data() as ProfileData;
+                    setProfileData(data);
                 } else {
                     console.warn("User profile not found");
                     setFetchedProfile({
@@ -56,6 +59,28 @@ const Profile: React.FC = () => {
 
     const handleLogout = async () => {
         await signOut();
+    };
+
+    // Save profile data to Firestore
+    const saveProfile = async () => {
+        if (!uid) {
+            Alert.alert("Error", "User not authenticated.");
+            return;
+        }
+
+        try {
+            const userDocRef = doc(db, "users", uid);
+            await updateDoc(userDocRef, profileData);
+            const updatedDoc = await getDoc(userDocRef);
+
+            if (updatedDoc.exists()) {
+                setProfileData(updatedDoc.data() as ProfileData);
+            }
+            Alert.alert("Success", "Profile saved successfully.");
+        } catch (err) {
+            console.error("Error saving profile:", err);
+            Alert.alert("Error", "Failed to save profile.");
+        }
     };
 
     // Pick an image from the device's gallery
@@ -144,29 +169,44 @@ const Profile: React.FC = () => {
                         editable={false}
                     />
 
-                    <Text style={styles.infoHeader}>Address Information</Text>
+                    <Text style={styles.infoHeader}>Location</Text>
+                    <View style={styles.switchContainer}>
+                        <Text>Manual Location?</Text>
+                        <Switch
+                            value={manualLocation}
+                            onValueChange={setManualLocation}
+                        />
+                    </View>
 
-                    <Text style={styles.infoLabel}>City:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.city || "Not available currently"}
-                        editable={false}
-                    />
+                    {manualLocation && (
+                        <>
+                            <Text style={styles.infoLabel}>City:</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={profileData.city || ""}
+                                onChangeText={(text) => setProfileData((prev) => ({ ...prev, city: text }))}
+                            />
 
-                    <Text style={styles.infoLabel}>State:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.state || "Not available currently"}
-                        editable={false}
-                    />
+                            <Text style={styles.infoLabel}>State:</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={profileData.state || ""}
+                                onChangeText={(text) => setProfileData((prev) => ({ ...prev, state: text }))}
+                            />
 
-                    <Text style={styles.infoLabel}>Zip Code:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.zipCode || "Not available currently"}
-                        editable={false}
-                    />
+                            <Text style={styles.infoLabel}>Zip Code:</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={profileData.zipCode || ""}
+                                onChangeText={(text) => setProfileData((prev) => ({ ...prev, zipCode: text }))}
+                            />
+                        </>
+                    )}
                 </View>
+
+                <TouchableOpacity style={styles.saveButton} onPress={() => saveProfile()}>
+                    <Text style={styles.saveButtonText}>Save Profile</Text>
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -227,6 +267,12 @@ const styles = StyleSheet.create({
     saveButtonText: {
         color: 'white',
         fontWeight: 'bold',
+    },
+    switchContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginVertical: 10,
     },
 });
 

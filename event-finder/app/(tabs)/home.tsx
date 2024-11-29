@@ -18,8 +18,10 @@ const HomeScreen: React.FC = () => {
   const [cityState, setCityState] = useState<string>('');
   const { profileData } = useProfile();
   const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
+  const [lastLatlong, setLastLatlong] = useState('');
 
   const fetchNearbyEvents = async () => {
+    if (lastLatlong === profileData.latlong) return; // prevent redundant API calls
     try {
       const response = await axios.get(TICKETMASTER_API_URL, {
         params: {
@@ -43,6 +45,7 @@ const HomeScreen: React.FC = () => {
         isFavorited: false
       })) || [];
       setNearbyEvents(events);
+      setLastLatlong(profileData.latlong || ''); // cache the latlong
     } catch (error) {
       console.error('Error fetching nearby events:', error);
     }
@@ -51,7 +54,7 @@ const HomeScreen: React.FC = () => {
   // Fetch city/state based on latlong when it's available
   useEffect(() => {
     // Only fetch city/state if latlong changes
-    if (profileData.latlong && !cityState) {
+    if (profileData.latlong) {
       // Fetch nearby events every time the latlong changes
       fetchNearbyEvents();
     }

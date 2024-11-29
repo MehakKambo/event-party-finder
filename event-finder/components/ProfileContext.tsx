@@ -2,9 +2,12 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import base64 from 'react-native-base64';
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { auth, db } from '@/lib/firebase-config';
 import { useLocation } from './LocationContext';
+import { Alert } from 'react-native';
 
-interface ProfileData {
+export interface ProfileData {
     firstName: string;
     lastName: string;
     dob: string;
@@ -17,8 +20,10 @@ interface ProfileData {
     zipCode: string;
     country: string;
     profilePic: string | null;
-    latlong?: string | null,
-    preferences?: string[]
+    manualLocation?: boolean;
+    latlong?: string | null;
+    preferences?: string[];
+    [key: string]: any;
 }
 
 const ProfileContext = createContext<{
@@ -26,14 +31,6 @@ const ProfileContext = createContext<{
     setProfileData: React.Dispatch<React.SetStateAction<ProfileData>>;
     saveProfile: () => Promise<void>
  } | undefined>(undefined);
-
-export const useProfile = () => {
-    const context = useContext(ProfileContext);
-    if (!context) {
-        throw new Error('useProfile must be used within a ProfileProvider');
-    }
-    return context;
-};
 
 // Photon API URL - free, opensource API to map city,state strings to latlong
 const PHOTON_API_URL = 'https://photon.komoot.io/api/';
@@ -54,6 +51,7 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
         zipCode: '10001',
         country: 'USA',
         profilePic: null,
+        manualLocation: true,
         latlong: latlong
     });
 
@@ -154,53 +152,49 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     };
 
-    // save and fetch latlong
-    const saveProfile = async () => {
-        const encodedData: any = encodeProfileData(profileData);
-        try {
-            // Ensure latlong exists before saving profile
-            if (encodedData.latlong) {
-                await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));
-                return;
-            }
-
-            if (encodedData.city && encodedData.state) {
-                const latlong = await fetchLatLong(encodedData.city, encodedData.state);
-
-                if (latlong) {
-                    setProfileData((prevData) => ({ ...prevData, latlong }));
-                    await AsyncStorage.setItem('profileData', JSON.stringify({ ...encodedData, latlong }));
-                } else {
-                    console.warn('Failed to fetch latlong, profile will be saved without it.');
-                    await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));  // Save without latlong
+    // Update latlong whenever city or state changes
+    useEffect(() => {
+        
+        const updateLatLong = async () => {
+            if (profileData.city && profileData.state) {
+                const newLatLong = await fetchLatLong(profileData.city, profileData.state);
+                if (newLatLong && newLatLong !== profileData.latlong) {
+                    setProfileData((prevData) => ({ ...prevData, latlong: newLatLong }));
                 }
-            } else {
-                console.warn('City or state is missing. Cannot fetch or save latlong.');
-                await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));  // Save without latlong
             }
+        };
+        updateLatLong();
+    }, [profileData.city, profileData.state]);
+
+    const saveProfile = async () => {
+        const encodedData = encodeProfileData(profileData);
+        try {
+            // Save to Firestore
+            const uid = auth.currentUser?.uid;
+            if (!uid) throw new Error('User not authenticated');
+            const userDocRef = doc(db, 'users', uid);
+            await updateDoc(userDocRef, encodedData);
+
+            // Save to AsyncStorage
+            await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));
         } catch (error) {
-            console.error('Error saving profile data:', error);
+            console.error('Error saving profile:', error);
         }
     };
 
-    // Track changes in city or state to update latlong
+    // Sync Firestore updates
     useEffect(() => {
-        // update profile when location changes
-        setProfileData((prevData) => ({
-            ...prevData,
-            city: city,
-            state: state,
-            latlong: latlong, 
-        }));
-
-        const updateLatLong = async () => {
-            await saveProfile(); // This will re-fetch latlong whenever city/state changes
-        };
-    
-        if (city && state) {
-            updateLatLong(); // Ensure latlong is updated whenever the city/state changes
-        }
-    }, [city, state, latlong]); // Trigger when city or state changes
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        const userDocRef = doc(db, 'users', uid);
+        const unsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const firebaseData = decodeProfileData(docSnapshot.data() as ProfileData);
+                setProfileData((prevData) => ({ ...prevData, ...firebaseData }));
+            }
+        });
+        return () => unsubscribe();
+    }, []);
     
 
     return (
@@ -208,4 +202,12 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
             {children}
         </ProfileContext.Provider>
     );
+};
+
+export const useProfile = () => {
+    const context = useContext(ProfileContext);
+    if (!context) {
+        throw new Error('useProfile must be used within a ProfileProvider');
+    }
+    return context;
 };
