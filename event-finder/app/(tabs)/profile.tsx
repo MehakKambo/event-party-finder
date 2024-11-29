@@ -35,6 +35,11 @@ const Profile: React.FC = () => {
                     setFetchedProfile(userDoc.data());
                     const data = userDoc.data() as ProfileData;
                     setProfileData(data);
+
+                    // Set manualLocation 
+                    if (data.manualLocation !== undefined) {
+                        setManualLocation(data.manualLocation); // Set the manualLocation from Firestore
+                    }
                 } else {
                     console.warn("User profile not found");
                     setFetchedProfile({
@@ -45,6 +50,7 @@ const Profile: React.FC = () => {
                         state: "Not available currently",
                         zipCode: "Not available currently",
                         preferences: [],
+                        manualLocation: false, // default to false
                     });
                 }
             } catch (err) {
@@ -71,7 +77,10 @@ const Profile: React.FC = () => {
 
         try {
             const userDocRef = doc(db, "users", uid);
-            await updateDoc(userDocRef, profileData);
+            await updateDoc(userDocRef, {
+                ...profileData,
+                manualLocation
+            });
             const updatedDoc = await getDoc(userDocRef);
 
             if (updatedDoc.exists()) {
@@ -169,7 +178,7 @@ const Profile: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.infoHeader}>Location</Text>
+                   
                     <View style={styles.switchContainer}>
                         <Text>Enter Location Manually?</Text>
                         <Switch
@@ -180,6 +189,7 @@ const Profile: React.FC = () => {
 
                     {manualLocation && (
                         <>
+                            <Text style={styles.infoHeader}>Location</Text>
                             <Text style={styles.infoLabel}>City:</Text>
                             <TextInput
                                 style={styles.textInput}
