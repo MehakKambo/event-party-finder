@@ -2,10 +2,9 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import base64 from 'react-native-base64';
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db } from '@/lib/firebase-config';
 import { useLocation } from './LocationContext';
-import { Alert } from 'react-native';
 
 export interface ProfileData {
     firstName: string;
@@ -111,19 +110,24 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
     return decodedText.replace(/0SPACE0/g, " ");
     };
 
-    // Load the profile data from AsyncStorage on initial load
     useEffect(() => {
         const loadData = async () => {
-            const savedData = await AsyncStorage.getItem('profileData');
-            if (savedData) {
-                const parsedData = JSON.parse(savedData);
-                // decode first
-                const decodedData = decodeProfileData(parsedData);
-                setProfileData(decodedData); // Set the context state
+            const uid = auth.currentUser?.uid;
+            if (!uid) return;
+
+            const userDocRef = doc(db, 'users', uid);
+            try {
+                const docSnapshot = await getDoc(userDocRef);
+                if (docSnapshot.exists()) {
+                    const firebaseData = decodeProfileData(docSnapshot.data() as ProfileData);
+                    setProfileData(firebaseData);
+                }
+            } catch (error) {
+                console.error('Error fetching user data from Firebase:', error);
             }
         };
-    
-        loadData(); // Call the load function on component mount
+
+        loadData(); // Fetch from Firebase directly on component mount
     }, []);
 
     // fetch latitude coordinates mapped to city,state

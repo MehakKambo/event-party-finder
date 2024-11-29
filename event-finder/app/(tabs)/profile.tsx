@@ -145,33 +145,29 @@ const Profile: React.FC = () => {
                     <TextInput
                         style={styles.textInput}
                         value={fetchedProfile?.firstName || "Not available currently"}
-                        editable={false}
                     />
 
                     <Text style={styles.infoLabel}>Last Name:</Text>
                     <TextInput
                         style={styles.textInput}
                         value={fetchedProfile?.lastName || "Not available currently"}
-                        editable={false}
                     />
 
                     <Text style={styles.infoLabel}>Email Address:</Text>
                     <TextInput
                         style={styles.textInput}
                         value={fetchedProfile?.email || "Not available currently"}
-                        editable={false}
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
                     <TextInput
                         style={styles.textInput}
                         value={fetchedProfile?.preferences?.join(', ') || "Not available currently"}
-                        editable={false}
                     />
 
                     <Text style={styles.infoHeader}>Location</Text>
                     <View style={styles.switchContainer}>
-                        <Text>Manual Location?</Text>
+                        <Text>Enter Location Manually?</Text>
                         <Switch
                             value={manualLocation}
                             onValueChange={setManualLocation}
@@ -277,3 +273,27 @@ const styles = StyleSheet.create({
 });
 
 export default Profile;
+
+// Function to fetch profile data
+export const fetchProfileData = async (uid: string) => {
+    if (!uid) {
+        console.warn("User not authenticated");
+        return null;
+    }
+
+    try {
+        const userDocRef = doc(db, "users", uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+            const data = userDoc.data() as ProfileData;
+            return data;
+        } else {
+            console.warn("User profile not found");
+            return null;
+        }
+    } catch (err) {
+        console.error('Error fetching profile data:', err);
+        return null;
+    }
+};
