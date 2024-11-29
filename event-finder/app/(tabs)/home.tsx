@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
 import axios from 'axios';
-import { Link, useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '../../types/EventDetails';
 import { FavoriteIcon } from '@/components/FavoriteIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewEvent from '@/components/viewEvent';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -16,7 +17,7 @@ const HomeScreen: React.FC = () => {
   const [refreshOnResume, setRefreshOnResume] = useState(false);
   const [cityState, setCityState] = useState<string>('');
   const { profileData } = useProfile();
-  const router = useRouter();
+  const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
 
   const fetchNearbyEvents = async () => {
     try {
@@ -79,15 +80,11 @@ const HomeScreen: React.FC = () => {
   }, [appState, refreshOnResume, profileData.latlong]);
   
 
-  // Pass event data to ViewEventScreen
   const handleEventPress = (event: EventDetails) => {
-    router.push({
-      pathname: '/viewEvent',
-      params: { event: JSON.stringify(event) },
-    });
+    setSelectedEvent(event);
   };
 
-  const toggleFavorite = (eventId: number) => {
+  const toggleFavorite = (eventId: string) => {
     setNearbyEvents(prevEvents =>
       prevEvents.map(event =>
         event.id === eventId ? { ...event, isFavorited: !event.isFavorited } : event
@@ -136,7 +133,12 @@ const HomeScreen: React.FC = () => {
     );
   };
 
-  return (
+  return selectedEvent ? (
+    <ViewEvent
+      event={selectedEvent}
+      onBack={() => setSelectedEvent(null)}
+    />
+  ) : (
     <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
         <View style={styles.container}>
