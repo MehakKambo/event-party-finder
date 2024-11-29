@@ -5,7 +5,7 @@ import { useSession } from '@/context';
 import { db, auth } from '@/lib/firebase-config';
 import { ProfileData, useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
-import { Redirect } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Profile: React.FC = () => {
@@ -14,6 +14,7 @@ const Profile: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [fetchedProfile, setFetchedProfile] = useState<any>(null);
     const [manualLocation, setManualLocation] = useState(false);
+    const router = useRouter();
 
     const uid = auth.currentUser?.uid;
 
@@ -160,10 +161,13 @@ const Profile: React.FC = () => {
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.preferences?.join(', ') || "Not available currently"}
-                    />
+                    <TouchableOpacity
+                        onPress={() => router.push('/preferences')} // Navigate to preferences selection page
+                    >
+                        <Text style={styles.textInput}>
+                            {fetchedProfile?.preferences?.join(', ') || "Not available currently"}
+                        </Text>
+                    </TouchableOpacity>
 
                     <Text style={styles.infoHeader}>Location</Text>
                     <View style={styles.switchContainer}>

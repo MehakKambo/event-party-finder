@@ -13,7 +13,6 @@ import ViewEvent from '@/components/viewEvent';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
-const GEOCODING_API_KEY = process.env.EXPO_PUBLIC_GEOCODING_API_KEY;
 
 const HomeScreen: React.FC = () => {
   const [nearbyEvents, setNearbyEvents] = useState<EventDetails[]>([]);
@@ -60,28 +59,6 @@ const HomeScreen: React.FC = () => {
     return <Redirect href="../sign-in" />;
   }
 
-  // Fetch lat/long from city and state using geocoding API
-  const fetchLatLongFromCityState = async (city: string, state: string) => {
-    try {
-      const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
-        params: {
-          q: `${city}, ${state}`,
-          key: GEOCODING_API_KEY,
-        },
-      });
-
-      const { lat, lng } = response.data.results[0]?.geometry || {};
-      if (lat && lng) {
-        return `${lat},${lng}`;
-      } else {
-        setLoading(false);
-        throw new Error('Unable to retrieve latlong from city and state');
-      }
-    } catch (error) {
-      return null;
-    }
-  };
-
   // Fetch nearby events based on the lat/long coordinates
   const fetchNearbyEvents = async (latlong: string) => {
     try {
@@ -117,23 +94,22 @@ const HomeScreen: React.FC = () => {
       setNearbyEvents(events);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching nearby events:', error);
       setLoading(false);
     }
   };
 
-  // Fetch city and state directly from the database or ProfileContext
   const getCityAndState = async () => {
-    if (!profileData || !profileData.city || !profileData.state) {
-      setLoading(false);
+    // Check if profileData contains valid latlong
+    if (profileData?.latlong) {
+      // Use latlong from profileData directly if available
+      fetchNearbyEvents(profileData.latlong);
       return;
     }
-
-    const latlong = await fetchLatLongFromCityState(profileData.city, profileData.state);
-    if (latlong) {
-      fetchNearbyEvents(latlong);
-    } else {
+  
+    if (!profileData?.city || !profileData?.state) {
+      console.warn('City or state not available');
       setLoading(false);
+      return;
     }
   };
 
