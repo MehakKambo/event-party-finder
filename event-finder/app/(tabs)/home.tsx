@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus, Alert } from 'react-native';
 import axios from 'axios';
-import { Link } from 'expo-router';
+import { db, auth } from '@/lib/firebase-config';
+import { doc, getDoc } from 'firebase/firestore';
+import { Link, Redirect } from 'expo-router';
 import { useProfile } from '@/components/ProfileContext';
+import { ProfileData } from '@/components/ProfileContext';
 import { EventDetails } from '../../types/EventDetails';
 import { FavoriteIcon } from '@/components/FavoriteIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,21 +16,66 @@ const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
 const HomeScreen: React.FC = () => {
   const [nearbyEvents, setNearbyEvents] = useState<EventDetails[]>([]);
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [refreshOnResume, setRefreshOnResume] = useState(false);
-  const [cityState, setCityState] = useState<string>('');
-  const { profileData } = useProfile();
+  const [loading, setLoading] = useState(true);
+  const { profileData, setProfileData } = useProfile();
   const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
-  const fetchNearbyEvents = async () => {
+  // Check for user authentication state and fetch profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      const uid = auth.currentUser?.uid;
+
+      if (!uid) {
+        console.warn("User not authenticated");
+        setIsAuthenticated(false);  // Set authentication state to false
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userDocRef = doc(db, "users", uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const data = userDoc.data() as ProfileData;
+          setProfileData(data);
+        } else {
+          console.warn("User profile not found");
+        }
+      } catch (err) {
+        console.error('Error fetching profile data:', err);
+        Alert.alert("Error", "Unable to fetch profile data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
+
+  // Redirect to login if the user is not authenticated
+  if (!isAuthenticated) {
+    return <Redirect href="../sign-in" />;
+  }
+
+  // Fetch nearby events based on the lat/long coordinates
+  const fetchNearbyEvents = async (latlong: string) => {
     try {
+      const preferences = (profileData.preferences) ?
+        profileData?.preferences?.length > 0
+          ? profileData.preferences.join('%20') : ''
+          :
+          '';
+        
       const response = await axios.get(TICKETMASTER_API_URL, {
         params: {
           apikey: TICKETMASTER_API_KEY,
-          latlong: profileData.latlong || '47.6062,-122.3321', // Default to Seattle if no latlong
+          latlong: latlong,
           radius: 25,
           unit: 'miles',
           size: 10,
+          keyword: preferences, // Use preferences as a keyword
         },
       });
 
@@ -42,48 +90,38 @@ const HomeScreen: React.FC = () => {
         venue: event._embedded?.venues[0],
         isFavorited: false
       })) || [];
+
       setNearbyEvents(events);
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching nearby events:', error);
+      setLoading(false);
     }
   };
 
-  // Fetch city/state based on latlong when it's available
-  useEffect(() => {
-    // Only fetch city/state if latlong changes
-    if (profileData.latlong && !cityState) {
-      // Fetch nearby events every time the latlong changes
-      fetchNearbyEvents();
+  const getCityAndState = async () => {
+    // Check if profileData contains valid latlong
+    if (profileData?.latlong) {
+      // Use latlong from profileData directly if available
+      fetchNearbyEvents(profileData.latlong);
+      return;
     }
-
-  }, [profileData.latlong]);
-
-  // Refresh events when app is resumed
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        if (refreshOnResume && !profileData.latlong) { 
-          fetchNearbyEvents();
-          setRefreshOnResume(false);
-        }
-      } else if (nextAppState === 'background') {
-        setRefreshOnResume(true);
-      }
-      setAppState(nextAppState);
-    };
   
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-  
-    return () => {
-      subscription.remove();
-    };
-  }, [appState, refreshOnResume, profileData.latlong]);
-  
-
-  const handleEventPress = (event: EventDetails) => {
-    setSelectedEvent(event);
+    if (!profileData?.city || !profileData?.state) {
+      console.warn('City or state not available');
+      setLoading(false);
+      return;
+    }
   };
 
+  // Run event fetching process once profile data is loaded
+  useEffect(() => {
+    if (profileData) {
+      getCityAndState();
+    }
+    setLoading(false);
+  }, [profileData]);
+
+  const handleEventPress = (event: EventDetails) => setSelectedEvent(event);
   const toggleFavorite = (eventId: string) => {
     setNearbyEvents(prevEvents =>
       prevEvents.map(event =>
@@ -92,70 +130,54 @@ const HomeScreen: React.FC = () => {
     );
   };
 
-  // Render event card
+  // Render event card with formatted date and time
   const renderEvent = (event: EventDetails) => {
-    const date = new Date(event.date + 'T' + event.time);
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    };
-    const dayAndDate = date.toLocaleDateString('en-US', options);
-    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
+    const date = new Date(`${event.date}T${event.time}`);
+    const formattedDate = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const formattedTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const venue = event.venue?.name || 'Unknown Venue';
-    const address = event.venue?.address?.line1 || '';
-    const city = event.venue?.city?.name || '';
-    const state = event.venue?.state?.stateCode || '';
-    const country = event.venue?.country?.name || '';
-    const location = `${venue}, ${address}, ${city}, ${state}, ${country}`;
+    const location = `${venue}, ${event.venue?.address?.line1 || ''}, ${event.venue?.city?.name || ''}, ${event.venue?.state?.stateCode || ''}, ${event.venue?.country?.name || ''}`;
 
     return (
       <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
         <View style={styles.eventContent}>
-          <ImageBackground
-            source={event.image}
-            style={styles.eventImage}
-            resizeMode="cover"
-          />
+          <ImageBackground source={event.image} style={styles.eventImage} resizeMode="cover" />
           <View style={styles.eventDetails}>
-            <Text style={styles.eventDayTime}>{`${dayAndDate} at ${time}`}</Text>
+            <Text style={styles.eventDayTime}>{`${formattedDate} at ${formattedTime}`}</Text>
             <Text style={styles.eventName}>{event.name}</Text>
             <Text style={styles.eventLocation}>{location}</Text>
           </View>
         </View>
-        <FavoriteIcon
-          isFavorited={event.isFavorited ?? false}
-          onPress={() => toggleFavorite(event.id)}
-        />
+        <FavoriteIcon isFavorited={event.isFavorited ?? false} onPress={() => toggleFavorite(event.id)} />
       </TouchableOpacity>
     );
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.alignCenter]}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Event detail page or event list
   return selectedEvent ? (
-    <ViewEvent
-      event={selectedEvent}
-      onBack={() => setSelectedEvent(null)}
-    />
+    <ViewEvent event={selectedEvent} onBack={() => setSelectedEvent(null)} />
   ) : (
     <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Recommended Events Near You</Text>
-          </View>
-
+          <Text style={styles.title}>Recommended Events Near You</Text>
           <View style={styles.locationSelector}>
             <Text style={styles.locationText}>
-              {cityState || (profileData.city && profileData.state ? `${profileData.city}, ${profileData.state}` : 'Location not available')}
+              {profileData?.city && profileData?.state ? `${profileData.city}, ${profileData.state}` : 'Location not available'}
             </Text>
-            <TouchableOpacity>
-              <Link style={styles.changeLink} href="/profile">Change</Link>
-            </TouchableOpacity>
+            <Link style={styles.changeLink} href="/profile">Change</Link>
           </View>
           <ScrollView contentContainerStyle={styles.eventList}>
-            {nearbyEvents.map((event) => renderEvent(event))}
+            {nearbyEvents.map(renderEvent)}
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -164,84 +186,22 @@ const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  bodyBackgroundImage: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  locationSelector: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginVertical: 20,
-  },
-  locationText: {
-    color: '#000000',
-    fontSize: 16,
-    fontStyle: 'italic',
-  },
-  changeLink: {
-    color: '#1E90FF',
-    marginLeft: 5,
-  },
-  eventList: {
-    paddingBottom: 20,
-  },
-  eventCard: {
-    flexDirection: 'row',
-    padding: 10,
-    paddingRight: 40,
-    marginVertical: 8,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    alignItems: 'center',
-    position: 'relative'
-  },
-  favoriteIcon: {
-    position: 'absolute',
-    right: 10,
-    top: '50%', 
-  },
-  eventContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  eventImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 10,
-    paddingRight: 30
-  },
-  eventDetails: {
-    flex: 1,
-  },
-  eventDayTime: {
-    fontSize: 14,
-    color: '#FF5733',
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  eventName: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginBottom: 3,
-  },
-  eventLocation: {
-    fontSize: 12,
-    color: '#BBBBBB',
-  },
+  container: { flex: 1, padding: 20 },
+  alignCenter: { flexGrow: 1, alignItems: 'center', textAlign: 'center' },
+  safeArea: { flex: 1, backgroundColor: '#f9f9f9' },
+  bodyBackgroundImage: { flex: 1 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#000000', textAlign: 'center' },
+  locationSelector: { flexDirection: 'row', alignItems: 'baseline', marginVertical: 20 },
+  locationText: { color: '#000000', fontSize: 16, fontStyle: 'italic' },
+  changeLink: { color: '#1E90FF', marginLeft: 5 },
+  eventList: { paddingBottom: 20 },
+  eventCard: { flexDirection: 'row', padding: 10, marginVertical: 8, backgroundColor: '#1a1a1a', borderRadius: 8 },
+  eventContent: { flexDirection: 'row', flex: 1 },
+  eventImage: { width: 100, height: 100, borderRadius: 8 },
+  eventDetails: { paddingLeft: 15, flex: 1 },
+  eventDayTime: { fontSize: 12, color: '#B0B0B0' },
+  eventName: { fontSize: 18, color: '#FFFFFF', fontWeight: 'bold' },
+  eventLocation: { fontSize: 14, color: '#B0B0B0' },
 });
 
 export default HomeScreen;

@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import { SessionProvider } from '@/context';
 import { ProfileProvider } from '@/components/ProfileContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { LocationProvider } from '@/components/LocationContext';
 
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -30,19 +31,21 @@ export default function RootLayout() {
 
   return (
     <SessionProvider>
-      <ProfileProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="sign-in" options={{ headerShown: false }} />
-            <Stack.Screen name="sign-up" options={{ headerShown: false }} />
-            <Stack.Screen name="location" options={{ headerShown: false }} />
-            <Stack.Screen name="preferences" options={{ headerShown: false }} />
-            <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
-      </ProfileProvider>
+      <LocationProvider>
+        <ProfileProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <Stack>
+              <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+              <Stack.Screen name="sign-up" options={{ headerShown: false }} />
+              <Stack.Screen name="location" options={{ headerShown: false }} />
+              <Stack.Screen name="preferences" options={{ headerShown: false }} />
+              <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
+        </ProfileProvider>
+      </LocationProvider>
     </SessionProvider>
   );
 }
