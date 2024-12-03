@@ -7,14 +7,24 @@ import { useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocation } from '@/components/LocationContext';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
     const { profileData, setProfileData, saveProfile } = useProfile();
     const [loading, setLoading] = useState(true);
     const [fetchedProfile, setFetchedProfile] = useState<any>(null);
+    const { city, state, latlong, refreshLocation } = useLocation();
 
     const uid = auth.currentUser?.uid;
+
+    const handleRefresh = async () => {
+        try {
+          await refreshLocation();
+        } catch (err) {
+          Alert.alert("Error", "Unable to refresh location. Please try again.");
+        }
+      };
 
     // Fetch user profile data from Firestore
     useEffect(() => {
@@ -107,7 +117,7 @@ const Profile: React.FC = () => {
                         <Text style={styles.changeLink}>Change</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.saveButton} onPress={handleLogout}>
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                         <Text style={styles.saveButtonText}>Log Out</Text>
                     </TouchableOpacity>
                 </View>
@@ -144,21 +154,15 @@ const Profile: React.FC = () => {
                         editable={false}
                     />
 
-                    <Text style={styles.infoHeader}>Address Information</Text>
+                    {/* Current Location Section */}
+                    <View style={styles.locationContainer}>
+                        <Text style={styles.locationHeader}>Current Location</Text>
+                        <Text style={styles.locationText}>{city}, {state}</Text>
+                    </View>
 
-                    <Text style={styles.infoLabel}>City:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.city || "Not available currently"}
-                        editable={false}
-                    />
-
-                    <Text style={styles.infoLabel}>State:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={fetchedProfile?.state || "Not available currently"}
-                        editable={false}
-                    />
+                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+                        <Text style={styles.refreshButtonText}>Refresh Location</Text>
+                    </TouchableOpacity>
 
                     <Text style={styles.infoLabel}>Zip Code:</Text>
                     <TextInput
@@ -166,6 +170,11 @@ const Profile: React.FC = () => {
                         value={fetchedProfile?.zipCode || "Not available currently"}
                         editable={false}
                     />
+
+                    {/* Save Profile Button */}
+                    <TouchableOpacity onPress={saveProfile} style={styles.saveButton}>
+                        <Text style={styles.saveButtonText}>Save Profile</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -216,6 +225,36 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         backgroundColor: '#fff',
     },
+    locationContainer: {
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    locationHeader: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    locationText: {
+        fontSize: 16,
+        marginTop: 5,
+    },
+    logoutButton: {
+        width: 175,
+        backgroundColor: '#ff0a07',
+        padding: 10,
+        margin: 20,
+        borderRadius: 5,
+    },
+    refreshButton: {
+        backgroundColor: '#407a40',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 20,
+    },
+    refreshButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
     saveButton: {
         marginVertical: 20,
         width: 370,
@@ -225,6 +264,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
     },
     saveButtonText: {
+        textAlign: 'center',
         color: 'white',
         fontWeight: 'bold',
     },

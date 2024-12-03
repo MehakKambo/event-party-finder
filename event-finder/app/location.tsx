@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { useSession } from "@/context";
+import { useLocation } from "@/components/LocationContext";
 import { db } from "@/lib/firebase-config";
 import { doc, updateDoc } from "firebase/firestore";
 import { router } from "expo-router";
@@ -21,13 +22,14 @@ export default function LocationSetup() {
   // ============================================================================
   // Hooks & State
   // ============================================================================
+  const { latlong, city, state, setLocation } = useLocation();
   const { user } = useSession();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  // const [city, setCity] = useState("");
+  // const [state, setState] = useState("");
   const [zipCode, setZipCode] = useState("");
-  const [latlong, setLatLong] = useState<string | null>(null);
+  // const [latlong, setLatLong] = useState<string | null>(null);
   const GEOAPIFY_API_KEY = process.env.EXPO_PUBLIC_GEO_API_KEY;
   const UNKNOWN_CITY = "Unknown City";
   const UNKNOWN_STATE = "Unknown State";
@@ -44,7 +46,8 @@ export default function LocationSetup() {
         const locationData = await Location.getCurrentPositionAsync({});
         const lat = locationData.coords.latitude;
         const lon = locationData.coords.longitude;
-        setLatLong(`${lat},${lon}`);
+        // setLatLong(`${lat},${lon}`);
+        setLocation({ latlong: `${lat},${lon}` });
         fetchLocationFromLatLong(lat, lon);
       }
     };
@@ -64,9 +67,14 @@ export default function LocationSetup() {
       const data = await response.json();
       if (data.features && data.features.length > 0) {
         const place = data.features[0].properties;
-        setCity(place.city || UNKNOWN_CITY);
-        setState(place.state || UNKNOWN_STATE);
+        // setCity(place.city || UNKNOWN_CITY);
+        // setState(place.state || UNKNOWN_STATE);
         setZipCode(place.postcode || UNKNOWN_ZIP);
+        setLocation({
+          city: place.city || "Unknown City",
+          state: place.state || "Unknown State",
+          zipCode: place.postcode || "Unknown ZIP",
+        });
         Alert.alert("Success", `Location set to: ${place.city}, ${place.state}`);
       } else throw new Error("No valid data found.");
     } catch (err) {
@@ -98,10 +106,15 @@ export default function LocationSetup() {
   const onSelectSuggestion = (item: any) => {
     setQuery(item.formatted);
     setSuggestions([]);
-    setLatLong(`${item.lat},${item.lon}`);
-    setCity(item.city || UNKNOWN_CITY);
-    setState(item.state || UNKNOWN_STATE);
+    // setLatLong(`${item.lat},${item.lon}`);
+    // setCity(item.city || UNKNOWN_CITY);
+    // setState(item.state || UNKNOWN_STATE);
     setZipCode(item.postcode || UNKNOWN_ZIP);
+    setLocation({
+      city: item.city || "Unknown City",
+      state: item.state || "Unknown State",
+      zipCode: item.postcode || "Unknown ZIP",
+    });
     Keyboard.dismiss();
   };
 
