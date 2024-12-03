@@ -20,14 +20,16 @@ const FindEventsScreen: React.FC = () => {
     const fetchEvents = async () => {
         setLoading(true);
         try {
+            const formattedPrefs = profileData.preferences.join(',');
             const response = await axios.get(TICKETMASTER_API_URL, {
                 params: {
                     apikey: TICKETMASTER_API_KEY,
                     keyword: searchQuery,
-                    latlong: '47.6062,-122.3321', // Seattle
+                    latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
                     radius: 25,
                     unit: 'miles',
                     size: 10,
+                    classificationName: formattedPrefs,
                 },
             });
 
