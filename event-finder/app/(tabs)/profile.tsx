@@ -1,30 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useSession } from '@/context';
 import { db, auth } from '@/lib/firebase-config';
-import { useProfile } from '@/components/ProfileContext';
+import { ProfileData, useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
-import { Redirect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocation } from '@/components/LocationContext';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
-    const { profileData, setProfileData, saveProfile } = useProfile();
+    const { profileData, setProfileData } = useProfile();
     const [loading, setLoading] = useState(true);
-    const [fetchedProfile, setFetchedProfile] = useState<any>(null);
     const { city, state, latlong, refreshLocation } = useLocation();
 
     const uid = auth.currentUser?.uid;
-
-    const handleRefresh = async () => {
-        try {
-          await refreshLocation();
-        } catch (err) {
-          Alert.alert("Error", "Unable to refresh location. Please try again.");
-        }
-      };
 
     // Fetch user profile data from Firestore
     useEffect(() => {
@@ -32,18 +22,33 @@ const Profile: React.FC = () => {
             if (!uid) {
                 console.warn("User not authenticated");
                 setLoading(false);
-                return <Redirect href="../sign-in" />;
+                return;
             }
+
             try {
-                // Directly fetch the user's document by their uid
                 const userDocRef = doc(db, "users", uid);
                 const userDoc = await getDoc(userDocRef);
 
                 if (userDoc.exists()) {
-                    setFetchedProfile(userDoc.data());
+                    const userData = userDoc.data() as ProfileData;
+                    setProfileData({
+                        firstName: userData.firstName || "Not available currently",
+                        lastName: userData.lastName || "Not available currently",
+                        email: userData.email || "Not available currently",
+                        city: userData.city || "Not available currently",
+                        state: userData.state || "Not available currently",
+                        zipCode: userData.zipCode || "Not available currently",
+                        preferences: userData.preferences || [],
+                        profilePic: userData.profilePic || "",
+                        dob: userData.dob || "Not available currently",
+                        phoneNumber: userData.phoneNumber || "Not available currently",
+                        addressLine1: userData.addressLine1 || "Not available currently",
+                        addressLine2: userData.addressLine2 || "Not available currently",
+                        country: userData.country || "Not available currently",
+                        latlong: userData.latlong || "",
+                    });
                 } else {
-                    console.warn("User profile not found");
-                    setFetchedProfile({
+                    setProfileData({
                         firstName: "Not available currently",
                         lastName: "Not available currently",
                         email: "Not available currently",
@@ -51,6 +56,8 @@ const Profile: React.FC = () => {
                         state: "Not available currently",
                         zipCode: "Not available currently",
                         preferences: [],
+                        profilePic: "",
+                        latlong: "",
                     });
                 }
             } catch (err) {
@@ -64,11 +71,32 @@ const Profile: React.FC = () => {
         fetchProfileData();
     }, [uid]);
 
-    const handleLogout = async () => {
-        await signOut();
+    // Save profile data to Firestore
+    const saveProfile = async () => {
+        if (!uid) {
+            Alert.alert("Error", "User not authenticated.");
+            return;
+        }
+    
+        try {
+            const userDocRef = doc(db, "users", uid);
+            await updateDoc(userDocRef, {
+                ...profileData,
+            });
+            const updatedDoc = await getDoc(userDocRef);
+    
+            if (updatedDoc.exists()) {
+                setProfileData(updatedDoc.data() as ProfileData);
+            }
+            Alert.alert("Success", "Profile saved successfully.");
+        } catch (err) {
+            console.error("Error saving profile:", err);
+            Alert.alert("Error", "Failed to save profile.");
+        }
     };
+    
 
-    // Pick an image from the device's gallery
+    // Handle profile image picking
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
@@ -90,6 +118,20 @@ const Profile: React.FC = () => {
                 profilePic: selectedImage,
             }));
         }
+    };
+
+    // Handle refreshing location
+    const handleRefreshLocation = async () => {
+        try {
+            await refreshLocation();  // This should update city, state, and latlong
+        } catch (err) {
+            Alert.alert("Error", "Unable to refresh location. Please try again.");
+        }
+    };
+
+    // Handle logout
+    const handleLogout = async () => {
+        await signOut();
     };
 
     if (loading) {
@@ -129,28 +171,28 @@ const Profile: React.FC = () => {
                     <Text style={styles.infoLabel}>First Name:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={fetchedProfile?.firstName || "Not available currently"}
+                        value={profileData.firstName || "Not available currently"}
                         editable={false}
                     />
 
                     <Text style={styles.infoLabel}>Last Name:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={fetchedProfile?.lastName || "Not available currently"}
+                        value={profileData.lastName || "Not available currently"}
                         editable={false}
                     />
 
                     <Text style={styles.infoLabel}>Email Address:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={fetchedProfile?.email || "Not available currently"}
+                        value={profileData.email || "Not available currently"}
                         editable={false}
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={fetchedProfile?.preferences?.join(', ') || "Not available currently"}
+                        value={profileData.preferences?.join(', ') || "Not available currently"}
                         editable={false}
                     />
 
@@ -160,19 +202,21 @@ const Profile: React.FC = () => {
                         <Text style={styles.locationText}>{city}, {state}</Text>
                     </View>
 
-                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+                    <TouchableOpacity onPress={handleRefreshLocation} style={styles.refreshButton}>
                         <Text style={styles.refreshButtonText}>Refresh Location</Text>
                     </TouchableOpacity>
 
                     <Text style={styles.infoLabel}>Zip Code:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={fetchedProfile?.zipCode || "Not available currently"}
+                        value={profileData.zipCode || "Not available currently"}
                         editable={false}
                     />
 
-                    {/* Save Profile Button */}
-                    <TouchableOpacity onPress={saveProfile} style={styles.saveButton}>
+                    <TouchableOpacity
+                        onPress={saveProfile}
+                        style={styles.saveButton}
+                    >
                         <Text style={styles.saveButtonText}>Save Profile</Text>
                     </TouchableOpacity>
                 </View>
