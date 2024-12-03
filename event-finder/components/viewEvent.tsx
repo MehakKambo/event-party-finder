@@ -1,10 +1,12 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Linking} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Linking, ImageBackground, Alert} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EventDetails } from '@/types/EventDetails';
+import { db, auth } from '@/lib/firebase-config';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ event, onBack }) => {
-    const { name, date, time, description, image, url, venue } = event;
+    const { id, name, date, time, description, image, url, venue } = event;
 
     // Format venue details
     const venueName = venue?.name || "Unknown Venue";
@@ -18,13 +20,92 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
     const parkingDetails = venue?.parkingDetail || "Parking information not available.";
     const accessibleSeatingDetail = venue?.accessibleSeatingDetail || "Not available.";
 
+    // Format date and time
+    const newDate = new Date(date + 'T' + time);
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    const dayAndDate = newDate.toLocaleDateString('en-US', options);
+    const newTime = newDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    const [ isSaved, setIsSaved ] = useState(false);
+    const uid = auth.currentUser?.uid;
+    const eventMetaData = {
+        id,
+        name,
+        dateTime: date + " " + time,
+        imageURL: image.uri,
+        venueName: venueName + " | " + city + ", " + state,
+    };
+
+    // Check if the event is already saved when the component loads
+    useEffect(() => {
+        const fetchSavedState = async () => {
+            if (!uid) return;
+    
+            try {
+                const userDocRef = doc(db, 'users', uid);
+                const userDoc = await getDoc(userDocRef);
+    
+                if (userDoc.exists()) {
+                    const savedEvents = userDoc.data().myEvents || [];
+                    // Check if the current event is in the saved events
+                    const isEventSaved = savedEvents.some((event: any) => event.id === id);
+                    setIsSaved(isEventSaved);
+                }
+            } catch (error) {
+                console.error("Error fetching saved state:", error);
+            }
+        };
+    
+        fetchSavedState();
+    }, [id, uid]);
+    
+
+
+    // Placeholder for Firebase Save Logic
+    const handleSaveEvent = async (eventId: string) => {
+        if (!uid) {
+            Alert.alert("Error", "Please sign in to save events.");
+            return;
+        }
+
+        try {
+            const userDocRef = doc(db, 'users', uid);
+            if (isSaved) {
+                await updateDoc(userDocRef, {
+                    myEvents: arrayRemove(eventMetaData)
+                });
+            } else {
+                await updateDoc(userDocRef, {
+                    myEvents: arrayUnion(eventMetaData)
+                });
+            }
+            // Toggle saved state
+            setIsSaved(!isSaved);
+        } catch (error) {
+            console.error("Error saving event:", error);
+        }
+    };
+
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+            <ScrollView style={styles.container}>
                 {/* Header Section */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack}>
                         <Text style={styles.backArrow}>← Back</Text>
+                    </TouchableOpacity>
+
+                    {/* Save/Unsave Button */}
+                    <TouchableOpacity
+                        style={styles.saveButton}
+                        onPress={() => handleSaveEvent(id)}
+                    >
+                        <Text style={styles.saveButtonText}>{isSaved ? "Unsave" : "Save"}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -38,7 +119,7 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
                 {/* Event Information */}
                 <View style={styles.eventInfoContainer}>
                     <Text style={styles.eventName}>{name}</Text>
-                    <Text style={styles.eventDate}>{`${date} at ${time}`}</Text>
+                    <Text style={styles.eventDate}>{`${dayAndDate} at ${newTime}`}</Text>
                     <Text style={styles.eventDescription}>Important Info: {description}</Text>
 
                     {/* Venue Information */}
@@ -66,7 +147,7 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
 
                 {/* RSVP Button */}
                 <TouchableOpacity style={styles.rsvpButton} onPress={() => Linking.openURL(url)}>
-                    <Text style={styles.buttonText}>Get Tickets</Text>
+                    <Text style={styles.buttonText}>Tickets / More Details</Text>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -88,6 +169,18 @@ const styles = StyleSheet.create({
     backArrow: {
         fontSize: 20,
         color: '#007AFF',
+    },
+    saveButton: {
+        backgroundColor: '#007AFF',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 5,
+        marginLeft: 'auto',
+    },
+    saveButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     eventImage: {
         width: '100%',

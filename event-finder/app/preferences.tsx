@@ -104,7 +104,7 @@ export default function Preferences() {
   // Render
   // ============================================================================
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
       <FlatList
         ListHeaderComponent={
           <View style={styles.section}>
