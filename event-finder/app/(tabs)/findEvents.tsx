@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '@/types/EventDetails';
 import ViewEvent from '@/components/viewEvent';
+import { Ionicons } from '@expo/vector-icons';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -106,17 +107,16 @@ const FindEventsScreen: React.FC = () => {
         />
       ) : (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
-            <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
                 <View style={styles.container}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>{`Search Events in ${profileData.city}, ${profileData.state}`}</Text>
-                    </View>
-
                     {/* Search Bar */}
                     <View style={styles.searchContainer}>
+                        {/* Search Icon */}
+                        <Ionicons name="search" size={24} color="#000000" />
+                        {/* Search Input */}
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search for concerts, sports, dance, tech etc."
+                            placeholder="Search events"
                             placeholderTextColor="#000000"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'column',
-        alignItems: 'baseline',
+        alignItems: 'center',
     },
     title: {
         fontSize: 24,
@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 10,
         marginVertical: 8,
+        marginRight: 11,
         backgroundColor: '#1a1a1a',
         borderRadius: 10,
         alignItems: 'center',

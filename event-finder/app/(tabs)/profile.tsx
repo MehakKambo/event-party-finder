@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useSession } from '@/context';
 import { db, auth } from '@/lib/firebase-config';
@@ -143,7 +143,8 @@ const Profile: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+        <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Profile Picture */}
                 <View style={styles.profilePicContainer}>
@@ -222,15 +223,18 @@ const Profile: React.FC = () => {
                 </View>
             </ScrollView>
         </SafeAreaView>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    bodyBackgroundImage: {
+        flex: 1,
+    },
     container: {
         flexGrow: 1,
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f9f9f9',
     },
     profilePicContainer: {
         alignItems: 'center',

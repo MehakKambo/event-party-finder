@@ -1,33 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground, AppState, AppStateStatus } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import axios from 'axios';
 import { Link } from 'expo-router';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '../../types/EventDetails';
-import { FavoriteIcon } from '@/components/FavoriteIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewEvent from '@/components/viewEvent';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
 const HomeScreen: React.FC = () => {
   const [nearbyEvents, setNearbyEvents] = useState<EventDetails[]>([]);
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [refreshOnResume, setRefreshOnResume] = useState(false);
   const [cityState, setCityState] = useState<string>('');
   const { profileData } = useProfile();
   const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
+  
+  const preferences = (profileData.preferences) ?
+        profileData?.preferences?.length > 0
+          ? profileData.preferences.join(', ') : ''
+          :
+          '';
 
   const fetchNearbyEvents = async () => {
     try {
+      
       const response = await axios.get(TICKETMASTER_API_URL, {
         params: {
           apikey: TICKETMASTER_API_KEY,
           latlong: profileData.latlong || '47.6062,-122.3321', // Default to Seattle if no latlong
           radius: 25,
           unit: 'miles',
-          size: 10,
+          size: 30,
+          classificationName: preferences,
         },
       });
 
@@ -40,7 +46,6 @@ const HomeScreen: React.FC = () => {
         image: { uri: event.images[0].url },
         url: event.url,
         venue: event._embedded?.venues[0],
-        isFavorited: false
       })) || [];
       setNearbyEvents(events);
     } catch (error) {
@@ -58,38 +63,9 @@ const HomeScreen: React.FC = () => {
 
   }, [profileData.latlong]);
 
-  // Refresh events when app is resumed
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        if (refreshOnResume && !profileData.latlong) { 
-          fetchNearbyEvents();
-          setRefreshOnResume(false);
-        }
-      } else if (nextAppState === 'background') {
-        setRefreshOnResume(true);
-      }
-      setAppState(nextAppState);
-    };
-  
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-  
-    return () => {
-      subscription.remove();
-    };
-  }, [appState, refreshOnResume, profileData.latlong]);
-  
 
   const handleEventPress = (event: EventDetails) => {
     setSelectedEvent(event);
-  };
-
-  const toggleFavorite = (eventId: string) => {
-    setNearbyEvents(prevEvents =>
-      prevEvents.map(event =>
-        event.id === eventId ? { ...event, isFavorited: !event.isFavorited } : event
-      )
-    );
   };
 
   // Render event card
@@ -105,11 +81,9 @@ const HomeScreen: React.FC = () => {
     const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
     const venue = event.venue?.name || 'Unknown Venue';
-    const address = event.venue?.address?.line1 || '';
     const city = event.venue?.city?.name || '';
     const state = event.venue?.state?.stateCode || '';
-    const country = event.venue?.country?.name || '';
-    const location = `${venue}, ${address}, ${city}, ${state}, ${country}`;
+    const location = `${city}, ${state} | ${venue}`;
 
     return (
       <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
@@ -125,10 +99,6 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.eventLocation}>{location}</Text>
           </View>
         </View>
-        <FavoriteIcon
-          isFavorited={event.isFavorited ?? false}
-          onPress={() => toggleFavorite(event.id)}
-        />
       </TouchableOpacity>
     );
   };
@@ -140,13 +110,14 @@ const HomeScreen: React.FC = () => {
     />
   ) : (
     <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#f9f9f9" }}>
+      <SafeAreaView style={{ flex: 1}}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Recommended Events Near You</Text>
+            <Text style={styles.title}>Curated Just for You</Text>
           </View>
 
           <View style={styles.locationSelector}>
+          <Ionicons name="location-outline" size={20} color="#000" style={styles.locationIcon} />
             <Text style={styles.locationText}>
               {cityState || (profileData.city && profileData.state ? `${profileData.city}, ${profileData.state}` : 'Location not available')}
             </Text>
@@ -154,9 +125,14 @@ const HomeScreen: React.FC = () => {
               <Link style={styles.changeLink} href="/profile">Change</Link>
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={styles.eventList}>
-            {nearbyEvents.map((event) => renderEvent(event))}
-          </ScrollView>
+
+          {nearbyEvents.length > 0 ? (
+            <ScrollView contentContainerStyle={styles.eventList}>
+              {nearbyEvents.map((event) => renderEvent(event))}
+            </ScrollView>
+          ) : (
+            <Text>No events found in your area. Try updating your preferences.</Text>
+          )}
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -173,7 +149,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'column',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   title: {
     fontSize: 24,
@@ -182,17 +158,22 @@ const styles = StyleSheet.create({
   },
   locationSelector: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    marginVertical: 20,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  locationIcon: {
+      marginRight: 8,
   },
   locationText: {
-    color: '#000000',
-    fontSize: 16,
-    fontStyle: 'italic',
+      fontSize: 16,
+      fontStyle: 'italic',
+      color: '#333',
   },
   changeLink: {
-    color: '#1E90FF',
-    marginLeft: 5,
+      color: '#1E90FF',
+      textDecorationLine: 'underline',
+      fontSize: 14,
+      marginLeft: 10,
   },
   eventList: {
     paddingBottom: 20,
@@ -200,17 +181,12 @@ const styles = StyleSheet.create({
   eventCard: {
     flexDirection: 'row',
     padding: 10,
-    paddingRight: 40,
+    marginRight: 10,
     marginVertical: 8,
     backgroundColor: '#1a1a1a',
     borderRadius: 10,
     alignItems: 'center',
     position: 'relative'
-  },
-  favoriteIcon: {
-    position: 'absolute',
-    right: 10,
-    top: '50%', 
   },
   eventContent: {
     flexDirection: 'row',
