@@ -10,7 +10,7 @@ import { useLocation } from '@/components/LocationContext';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
-    const { profileData, setProfileData } = useProfile();
+    const { profileData, setProfileData, saveProfile } = useProfile();
     const [loading, setLoading] = useState(true);
     const { city, state, latlong, refreshLocation } = useLocation();
 
@@ -31,22 +31,10 @@ const Profile: React.FC = () => {
 
                 if (userDoc.exists()) {
                     const userData = userDoc.data() as ProfileData;
-                    setProfileData({
-                        firstName: userData.firstName || "Not available currently",
-                        lastName: userData.lastName || "Not available currently",
-                        email: userData.email || "Not available currently",
-                        city: userData.city || "Not available currently",
-                        state: userData.state || "Not available currently",
-                        zipCode: userData.zipCode || "Not available currently",
-                        preferences: userData.preferences || [],
-                        profilePic: userData.profilePic || "",
-                        dob: userData.dob || "Not available currently",
-                        phoneNumber: userData.phoneNumber || "Not available currently",
-                        addressLine1: userData.addressLine1 || "Not available currently",
-                        addressLine2: userData.addressLine2 || "Not available currently",
-                        country: userData.country || "Not available currently",
-                        latlong: userData.latlong || "",
-                    });
+                    setProfileData((prevData) => ({
+                        ...prevData, 
+                        ...userData,
+                    }));
                 } else {
                     setProfileData({
                         firstName: "Not available currently",
@@ -70,32 +58,7 @@ const Profile: React.FC = () => {
 
         fetchProfileData();
     }, [uid]);
-
-    // Save profile data to Firestore
-    const saveProfile = async () => {
-        if (!uid) {
-            Alert.alert("Error", "User not authenticated.");
-            return;
-        }
     
-        try {
-            const userDocRef = doc(db, "users", uid);
-            await updateDoc(userDocRef, {
-                ...profileData,
-            });
-            const updatedDoc = await getDoc(userDocRef);
-    
-            if (updatedDoc.exists()) {
-                setProfileData(updatedDoc.data() as ProfileData);
-            }
-            Alert.alert("Success", "Profile saved successfully.");
-        } catch (err) {
-            console.error("Error saving profile:", err);
-            Alert.alert("Error", "Failed to save profile.");
-        }
-    };
-    
-
     // Handle profile image picking
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -126,6 +89,19 @@ const Profile: React.FC = () => {
             await refreshLocation();  // This should update city, state, and latlong
         } catch (err) {
             Alert.alert("Error", "Unable to refresh location. Please try again.");
+        }
+    };
+
+    // Handle saving profile
+    const handleSaveProfile = async () => {
+        setLoading(true);
+        const success = await saveProfile();
+        setLoading(false);
+
+        if (success) {
+            Alert.alert("Success", "Profile saved successfully.");
+        } else {
+            Alert.alert("Error", "Failed to save profile.");
         }
     };
 
@@ -172,29 +148,53 @@ const Profile: React.FC = () => {
                     <Text style={styles.infoLabel}>First Name:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={profileData.firstName || "Not available currently"}
-                        editable={false}
+                        value={profileData.firstName}
+                        placeholder="Enter first name"  
+                        onChangeText={(text) =>
+                            setProfileData((prevData) => ({
+                                ...prevData,
+                                firstName: text,
+                            }))
+                        }
                     />
 
                     <Text style={styles.infoLabel}>Last Name:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={profileData.lastName || "Not available currently"}
-                        editable={false}
+                        value={profileData.lastName}
+                        placeholder="Enter last name"
+                        onChangeText={(text) =>
+                            setProfileData((prevData) => ({
+                                ...prevData,
+                                lastName: text,
+                            }))
+                        }
                     />
 
                     <Text style={styles.infoLabel}>Email Address:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={profileData.email || "Not available currently"}
-                        editable={false}
+                        value={profileData.email}
+                        placeholder="Enter a valid email address"
+                        onChangeText={(text) =>
+                            setProfileData((prevData) => ({
+                                ...prevData,
+                                email: text,
+                            }))
+                        }
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={profileData.preferences?.join(', ') || "Not available currently"}
-                        editable={false}
+                        value={profileData.preferences?.join(', ') || ""}
+                        placeholder="Enter preferences separated by commas"
+                        onChangeText={(text) => {
+                            setProfileData((prevData) => ({
+                                ...prevData,
+                                preferences: text.split(',').map((pref) => pref.trim()),
+                            }));
+                        }}
                     />
 
                     {/* Current Location Section */}
@@ -210,12 +210,18 @@ const Profile: React.FC = () => {
                     <Text style={styles.infoLabel}>Zip Code:</Text>
                     <TextInput
                         style={styles.textInput}
-                        value={profileData.zipCode || "Not available currently"}
-                        editable={false}
+                        value={profileData.zipCode}
+                        placeholder="Enter zip code"
+                        onChangeText={(text) =>
+                            setProfileData((prevData) => ({
+                                ...prevData,
+                                zipCode: text,
+                            }))
+                        }
                     />
 
                     <TouchableOpacity
-                        onPress={saveProfile}
+                        onPress={handleSaveProfile}
                         style={styles.saveButton}
                     >
                         <Text style={styles.saveButtonText}>Save Profile</Text>
