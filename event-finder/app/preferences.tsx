@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useSession } from "@/context";
 import { db } from "@/lib/firebase-config";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Redirect, router } from "expo-router";
 import { predefinedKeywords } from "@/constants/keywords";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -60,11 +60,22 @@ export default function Preferences() {
 
     try {
       const userDocRef = doc(db, "users", user.uid);
+
+      // Fetch existing user preferences to determine if this is the first setup
+      const userDoc = await getDoc(userDocRef);
+      const isFirstTimeSetup = !userDoc.exists() || !userDoc.data()?.preferences?.length;
+
       await updateDoc(userDocRef, {
         preferences: selectedKeywords,
       });
       Alert.alert("Success", "Preferences saved successfully.");
+
+    // Redirect based on whether it's the first time
+    if (isFirstTimeSetup) {
       router.replace({ pathname: "/(tabs)/home" });
+    } else {
+      router.replace({ pathname: "/(tabs)/profile" }); 
+    }
     } catch (err) {
       console.error("Error saving preferences:", err);
       Alert.alert("Error", "Failed to save preferences.");

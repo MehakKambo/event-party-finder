@@ -7,12 +7,14 @@ import { ProfileData, useProfile } from '@/components/ProfileContext';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocation } from '@/components/LocationContext';
+import { useRouter } from 'expo-router';
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
     const { profileData, setProfileData, saveProfile } = useProfile();
     const [loading, setLoading] = useState(true);
     const { city, state, latlong, refreshLocation } = useLocation();
+    const router = useRouter();
 
     const uid = auth.currentUser?.uid;
 
@@ -185,17 +187,14 @@ const Profile: React.FC = () => {
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={profileData.preferences?.join(', ') || ""}
-                        placeholder="Enter preferences separated by commas"
-                        onChangeText={(text) => {
-                            setProfileData((prevData) => ({
-                                ...prevData,
-                                preferences: text.split(',').map((pref) => pref.trim()),
-                            }));
-                        }}
-                    />
+                    <TouchableOpacity
+                        style={styles.textInput} // Reuse your input styles for consistency
+                        onPress={() => router.push('/preferences')} // Navigate to the preferences screen
+                    >
+                        <Text>
+                            {profileData.preferences?.join(', ') || 'Tap to set your preferences'}
+                        </Text>
+                    </TouchableOpacity>
 
                     {/* Current Location Section */}
                     <View style={styles.locationContainer}>

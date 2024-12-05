@@ -137,16 +137,12 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({ children })
                     state: state,
                     updatedAt: new Date(), // Timestamp when saving the profile
                 });
-
-                console.log('Profile saved successfully to Firestore');
             } else {
                 console.warn('Latlong is missing, profile will not be saved with latlong.');
             }
 
             // Save the profile data locally in AsyncStorage
             await AsyncStorage.setItem('profileData', JSON.stringify(encodedData));
-            console.log('Profile saved successfully to AsyncStorage');
-            
             return true;
         } catch (error) {
             console.error('Error saving profile:', error);

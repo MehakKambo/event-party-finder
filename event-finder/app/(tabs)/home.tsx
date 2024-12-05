@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import axios from 'axios';
 import { Link } from 'expo-router';
 import { useProfile } from '@/components/ProfileContext';
+import { useFocusEffect } from '@react-navigation/native';
 import { EventDetails } from '../../types/EventDetails';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewEvent from '@/components/viewEvent';
@@ -54,14 +55,13 @@ const HomeScreen: React.FC = () => {
   };
 
   // Fetch city/state based on latlong when it's available
-  useEffect(() => {
-    // Only fetch city/state if latlong changes
-    if (profileData.latlong && !cityState) {
-      // Fetch nearby events every time the latlong changes
-      fetchNearbyEvents();
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (profileData.latlong)
+        fetchNearbyEvents();
+    }, [profileData.latlong, profileData.preferences])
+  );
 
-  }, [profileData.latlong]);
 
 
   const handleEventPress = (event: EventDetails) => {
