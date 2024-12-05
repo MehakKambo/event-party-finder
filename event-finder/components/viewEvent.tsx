@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EventDetails } from '@/types/EventDetails';
 import { db, auth } from '@/lib/firebase-config';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import * as Calendar from 'expo-calendar';
 
 const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ event, onBack }) => {
     const { id, name, date, time, description, image, url, venue } = event;
@@ -63,8 +64,46 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
     
         fetchSavedState();
     }, [id, uid]);
-    
 
+    // Add event to the calendar
+    const handleAddToCalendar = async () => {
+        try {
+            // Request calendar permissions
+            const { status } = await Calendar.requestCalendarPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Cannot access the calendar.');
+                return;
+            }
+    
+            // Get default calendar
+            const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+            const defaultCalendar = calendars.find((cal) => cal.source.name === 'Default') || calendars[0];
+    
+            if (!defaultCalendar) {
+                Alert.alert('Error', 'No calendar available.');
+                return;
+            }
+    
+            const calendarId = defaultCalendar.id;
+            const eventDate = new Date(date + 'T' + time);
+    
+            // Add event to the calendar
+            await Calendar.createEventAsync(calendarId, {
+                title: name,
+                startDate: eventDate,
+                endDate: new Date(eventDate.getTime() + 2 * 60 * 60 * 1000), // 2-hour duration
+                timeZone: 'GMT',
+                location: venue?.name || 'Unknown Venue',
+                notes: description,
+            });
+    
+            Alert.alert('Success', 'Event added to your calendar!');
+        } catch (error) {
+            console.error('Error adding event to calendar:', error);
+            Alert.alert('Error', 'Could not add event to calendar.');
+        }
+    };
+    
 
     // Placeholder for Firebase Save Logic
     const handleSaveEvent = async (eventId: string) => {
@@ -121,7 +160,7 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
                     <View style={styles.eventInfoContainer}>
                         <Text style={styles.eventName}>{name}</Text>
                         <Text style={styles.eventDate}>{`${dayAndDate} at ${newTime}`}</Text>
-                        <Text style={styles.eventDescription}>Important Info: {description}</Text>
+                        <Text style={styles.eventDescription}>○ Important Info: {description}</Text>
 
                         {/* Venue Information */}
                         <View style={styles.venueDetails}>
@@ -133,22 +172,34 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
                         {/* Accessibility and Parking */}
                         <View style={styles.venueDetails}>
                             <Text style={styles.sectionTitle}>Accessibility & Parking</Text>
-                            <Text style={styles.venueText}>Accessible Seating: {accessibleSeatingDetail}</Text>
-                            <Text style={styles.venueText}>Parking: {parkingDetails}</Text>
+                            <Text style={styles.venueText}>○ Accessible Seating: {accessibleSeatingDetail}</Text>
+                            <Text style={styles.venueText}>○ Parking: {parkingDetails}</Text>
                         </View>
 
                         {/* Rules & Box Office */}
                         <View style={styles.venueDetails}>
                             <Text style={styles.sectionTitle}>Rules & Box Office</Text>
-                            <Text style={styles.venueText}>General Rules: {generalRules}</Text>
-                            <Text style={styles.venueText}>Child Rules: {childRules}</Text>
-                            <Text style={styles.venueText}>Box Office Hours: {boxOfficeHours}</Text>
+                            <Text style={styles.venueText}>○ General Rules: {generalRules}</Text>
+                            <Text style={styles.venueText}>○ Child Rules: {childRules}</Text>
+                            <Text style={styles.venueText}>○ Box Office Hours: {boxOfficeHours}</Text>
                         </View>
                     </View>
 
                     {/* RSVP Button */}
-                    <TouchableOpacity style={styles.rsvpButton} onPress={() => Linking.openURL(url)}>
+                    <TouchableOpacity style={styles.rsvpButton} onPress={() => {
+                            if (!event.url) {
+                                Alert.alert('Currently Not Available', 'Check back later.');
+                            } else {
+                                Linking.openURL(event.url);
+                            }
+                        }}
+                    >
                         <Text style={styles.buttonText}>Tickets / More Details</Text>
+                    </TouchableOpacity>
+
+                    {/* Add to Calendar Button */}
+                    <TouchableOpacity style={styles.rsvpButton} onPress={handleAddToCalendar}>
+                        <Text style={styles.buttonText}>Add to Calendar</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </SafeAreaView>
@@ -228,7 +279,7 @@ const styles = StyleSheet.create({
     venueText: {
         fontSize: 14,
         color: '#444',
-        marginBottom: 5,
+        marginBottom: 8,
     },
     rsvpButton: {
         marginTop: 20,

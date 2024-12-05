@@ -31,7 +31,7 @@ const FindEventsScreen: React.FC = () => {
                     latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
                     radius: 25,
                     unit: 'miles',
-                    size: 10,
+                    size: 25,
                     classificationName: formattedPrefs,
                 },
             });
@@ -66,7 +66,7 @@ const FindEventsScreen: React.FC = () => {
                     latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
                     radius: 25,
                     unit: 'miles',
-                    size: 10,
+                    size: 25,
                     classificationName: formattedPrefs,
                     sort: 'date,asc',
                 },
@@ -166,7 +166,7 @@ const FindEventsScreen: React.FC = () => {
                         {/* Search Input */}
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search events"
+                            placeholder="Search by events, artists, or venues"
                             placeholderTextColor="#000000"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     eventList: {
-        paddingBottom: 20,
+        paddingBottom: 50,
     },
     eventCard: {
         flexDirection: 'row',
