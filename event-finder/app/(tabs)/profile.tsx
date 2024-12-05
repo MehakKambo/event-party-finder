@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     },
     saveButton: {
         marginVertical: 20,
-        width: 370,
+        width: 330,
         backgroundColor: '#007AFF',
         padding: 10,
         alignItems: 'center',

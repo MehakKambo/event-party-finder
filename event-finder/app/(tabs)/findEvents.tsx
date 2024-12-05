@@ -16,6 +16,8 @@ const FindEventsScreen: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const { profileData } = useProfile();
     const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
+    const [isSortingRecent, setIsSortingRecent] = useState(false);
+    const [isSortingRelevant, setIsSortingRelevant] = useState(false);
 
     // Fetch events from Ticketmaster API
     const fetchEvents = async () => {
@@ -53,11 +55,56 @@ const FindEventsScreen: React.FC = () => {
         }
     };
 
+    const fetchEventsByRecent = async () => {
+        setLoading(true);
+        try {
+            const formattedPrefs = profileData.preferences.join(',');
+            const response = await axios.get(TICKETMASTER_API_URL, {
+                params: {
+                    apikey: TICKETMASTER_API_KEY,
+                    keyword: searchQuery,
+                    latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
+                    radius: 25,
+                    unit: 'miles',
+                    size: 10,
+                    classificationName: formattedPrefs,
+                    sort: 'date,asc',
+                },
+            });
+
+            const fetchedEvents = response.data._embedded?.events.map((event: any) => ({
+                id: event.id,
+                date: event.dates.start.localDate,
+                name: event.name,
+                description: event.info || 'No description available',
+                time: event.dates.start.localTime || 'TBD',
+                image: { uri: event.images[0].url },
+                url: event.url,
+                venue: event._embedded?.venues[0],
+            })) || [];
+
+            setEvents(fetchedEvents);
+        } catch (error) {
+            console.error('Error fetching events:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Pass event data to ViewEventScreen
     const handleEventPress = (event: EventDetails) => {
         setSelectedEvent(event);
     };
 
+    const handleSortRecent = () => {
+        setIsSortingRecent(true);
+        fetchEventsByRecent().then(() => setIsSortingRecent(false));
+    };
+
+    const handleSortRelevant = () => {
+        setIsSortingRelevant(true);
+        fetchEvents().then(() => setIsSortingRelevant(false));
+    };
 
     // Render event card
     const renderEvent = (event: EventDetails) => {
@@ -110,6 +157,9 @@ const FindEventsScreen: React.FC = () => {
       ) : (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
             <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Find Events</Text>
+                </View>
                 <View style={styles.container}>
                     {/* Search Bar */}
                     <View style={styles.searchContainer}>
@@ -125,7 +175,14 @@ const FindEventsScreen: React.FC = () => {
                             onSubmitEditing={fetchEvents}
                         />
                     </View>
-
+                    <View style={ {flexDirection: "row", justifyContent: 'space-evenly'} }>
+                        <TouchableOpacity style={styles.sortButton} onPress={handleSortRecent} disabled={isSortingRecent}>
+                            <Text style={styles.sortButtonText}>{isSortingRecent ? 'Sorting...' : 'Sort by recent'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.sortButton} onPress={handleSortRelevant} disabled={isSortingRelevant}>
+                            <Text style={styles.sortButtonText}>{isSortingRelevant ? 'Sorting...' : 'Sort by relevant'}</Text>
+                        </TouchableOpacity>
+                    </View>
                     {/* Events List */}
                     <ScrollView contentContainerStyle={styles.eventList}>
                         {loading ? (
@@ -145,12 +202,16 @@ const FindEventsScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        paddingTop: 20,
+        paddingLeft: 20,
+        paddingRight: 20,
+        paddingBottom: 0,
     },
     bodyBackgroundImage: {
         flex: 1,
     },
     header: {
+        marginTop: 10,
         flexDirection: 'column',
         alignItems: 'center',
     },
@@ -160,7 +221,7 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
     searchContainer: {
-        marginTop: 20,
+        marginTop: 5,
         marginBottom: 20,
         backgroundColor: '#e0e0e0',
         borderRadius: 10,
@@ -173,6 +234,19 @@ const styles = StyleSheet.create({
         fontSize: 16,
         paddingHorizontal: 10,
         color: '#000000',
+    },
+    sortButton: {
+        //alignSelf: 'center',
+        backgroundColor: '#007AFF',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        marginBottom: 10,
+    },
+    sortButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     eventList: {
         paddingBottom: 20,
