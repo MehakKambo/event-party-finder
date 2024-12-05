@@ -133,27 +133,31 @@ const MyEvents: React.FC = () => {
         <ViewEvent
             event={selectedEvent}
             onBack={() => {
-                setSelectedEvent(null), 
-                fetchSavedEvents()
+                setSelectedEvent(null);
+                fetchSavedEvents();
             }}
         />
     ) : (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
             <SafeAreaView style={{ flex: 1 }}>
-                <Text style={styles.title}>Upcoming Events</Text>
-                <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={isRefreshing}>
-                    <Text style={styles.refreshButtonText}>{isRefreshing ? 'Refreshing...' : 'Refresh'}</Text>
-                </TouchableOpacity>
-                <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={styles.eventList}>
-                    {upcomingEvents.length > 0 ? (
-                        upcomingEvents.map((event) => renderEvent(event))
-                    ) : (
-                        <Text style={styles.noEventsText}>No upcoming events found!</Text>
-                    )}
-                </ScrollView>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Upcoming Events</Text>
+                        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={isRefreshing}>
+                            <Text style={styles.refreshButtonText}>{isRefreshing ? 'Refreshing...' : 'Refresh'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={styles.eventList}>
+                        {upcomingEvents.length > 0 ? (
+                            upcomingEvents.map((event) => renderEvent(event))
+                        ) : (
+                            <Text style={styles.noEventsText}>No upcoming events found!</Text>
+                        )}
+                    </ScrollView>
+                </View>
             </SafeAreaView>
         </ImageBackground>
-    );
+    );    
 };
 
 // Styles
@@ -161,13 +165,21 @@ const styles = StyleSheet.create({
     bodyBackgroundImage: {
         flex: 1,
     },
+    container: {
+        padding: 5,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+        marginHorizontal: 10,
+    },
     refreshButton: {
-        alignSelf: 'center',
         backgroundColor: '#007AFF',
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 5,
-        marginBottom: 10,
     },
     refreshButtonText: {
         color: '#FFFFFF',
@@ -178,8 +190,6 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: '#000000',
-        textAlign: 'center',
-        padding: 20,
     },
     eventList: {
         paddingBottom: 10,
@@ -192,7 +202,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#1a1a1a',
         borderRadius: 10,
         alignItems: 'center',
-        position: 'relative'
+        position: 'relative',
     },
     eventContent: {
         flexDirection: 'row',
@@ -203,7 +213,7 @@ const styles = StyleSheet.create({
         height: 80,
         borderRadius: 8,
         marginRight: 10,
-        paddingRight: 30
+        paddingRight: 30,
     },
     eventDetails: {
         flex: 1,

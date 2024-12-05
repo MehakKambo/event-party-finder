@@ -35,12 +35,13 @@ const HomeScreen: React.FC = () => {
           unit: 'miles',
           size: 30,
           classificationName: preferences,
+          sort: 'date,asc',
         },
       });
 
       const events = response.data._embedded?.events.map((event: any) => ({
         id: event.id,
-        date: event.dates.start.localDate,
+        date: event.dates.start.localDate || 'TBD',
         name: event.name,
         description: event.info || 'No description available',
         time: event.dates.start.localTime || 'TBD',
@@ -83,7 +84,7 @@ const HomeScreen: React.FC = () => {
     const venue = event.venue?.name || 'Unknown Venue';
     const city = event.venue?.city?.name || '';
     const state = event.venue?.state?.stateCode || '';
-    const location = `${city}, ${state} | ${venue}`;
+    const location = `${venue} | ${city}, ${state}`;
 
     return (
       <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
@@ -141,11 +142,7 @@ const HomeScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingTop: 20,
-    paddingLeft: 20,
-    paddingRight: 20,
-    paddingBottom: 0,
+    padding: 15,
   },
   bodyBackgroundImage: {
     flex: 1,
@@ -185,7 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 10,
     marginRight: 10,
-    marginVertical: 8,
+    marginVertical: 5,
     backgroundColor: '#1a1a1a',
     borderRadius: 10,
     alignItems: 'center',

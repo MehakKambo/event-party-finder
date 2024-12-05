@@ -121,12 +121,10 @@ const FindEventsScreen: React.FC = () => {
 
         // Format location from venue, address, city, state, and country
         const venue = event.venue?.name || 'Unknown Venue';
-        const address = event.venue?.address?.line1 || '';
         const city = event.venue?.city?.name || '';
         const state = event.venue?.state?.stateCode || '';
-        const country = event.venue?.country?.name || '';
 
-        const location = `${venue}, ${address}, ${city}, ${state}, ${country}`;
+        const location = `${venue} | ${city}, ${state}`;
 
         return (
             <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
@@ -201,11 +199,8 @@ const FindEventsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        paddingTop: 20,
-        paddingLeft: 20,
-        paddingRight: 20,
-        paddingBottom: 0,
+        padding: 15,
+        paddingBottom: 105,
     },
     bodyBackgroundImage: {
         flex: 1,
@@ -254,7 +249,7 @@ const styles = StyleSheet.create({
     eventCard: {
         flexDirection: 'row',
         padding: 10,
-        marginVertical: 8,
+        marginVertical: 5,
         marginRight: 11,
         backgroundColor: '#1a1a1a',
         borderRadius: 10,

@@ -92,79 +92,80 @@ const ViewEvent: React.FC<{ event: EventDetails; onBack: () => void }> = ({ even
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
-            <ScrollView style={styles.container}>
-                {/* Header Section */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack}>
-                        <Text style={styles.backArrow}>← Back</Text>
+        <ImageBackground source={require('../assets/images/simple-background.jpg')} style={{ flex: 1 }}>
+            <SafeAreaView style={{ flex: 1}}>
+                <ScrollView style={styles.container}>
+                    {/* Header Section */}
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={onBack}>
+                            <Text style={styles.backArrow}>← Back</Text>
+                        </TouchableOpacity>
+
+                        {/* Save/Unsave Button */}
+                        <TouchableOpacity
+                            style={styles.saveButton}
+                            onPress={() => handleSaveEvent(id)}
+                        >
+                            <Text style={styles.saveButtonText}>{isSaved ? "Unsave" : "Save"}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Event Image */}
+                    <Image
+                        source={image}
+                        style={styles.eventImage}
+                        resizeMode="cover"
+                    />
+
+                    {/* Event Information */}
+                    <View style={styles.eventInfoContainer}>
+                        <Text style={styles.eventName}>{name}</Text>
+                        <Text style={styles.eventDate}>{`${dayAndDate} at ${newTime}`}</Text>
+                        <Text style={styles.eventDescription}>Important Info: {description}</Text>
+
+                        {/* Venue Information */}
+                        <View style={styles.venueDetails}>
+                            <Text style={styles.sectionTitle}>Venue Details</Text>
+                            <Text style={styles.venueText}>Name: {venueName}</Text>
+                            <Text style={styles.venueText}>Address: {address}, {city}, {state} {postalCode}</Text>
+                        </View>
+
+                        {/* Accessibility and Parking */}
+                        <View style={styles.venueDetails}>
+                            <Text style={styles.sectionTitle}>Accessibility & Parking</Text>
+                            <Text style={styles.venueText}>Accessible Seating: {accessibleSeatingDetail}</Text>
+                            <Text style={styles.venueText}>Parking: {parkingDetails}</Text>
+                        </View>
+
+                        {/* Rules & Box Office */}
+                        <View style={styles.venueDetails}>
+                            <Text style={styles.sectionTitle}>Rules & Box Office</Text>
+                            <Text style={styles.venueText}>General Rules: {generalRules}</Text>
+                            <Text style={styles.venueText}>Child Rules: {childRules}</Text>
+                            <Text style={styles.venueText}>Box Office Hours: {boxOfficeHours}</Text>
+                        </View>
+                    </View>
+
+                    {/* RSVP Button */}
+                    <TouchableOpacity style={styles.rsvpButton} onPress={() => Linking.openURL(url)}>
+                        <Text style={styles.buttonText}>Tickets / More Details</Text>
                     </TouchableOpacity>
-
-                    {/* Save/Unsave Button */}
-                    <TouchableOpacity
-                        style={styles.saveButton}
-                        onPress={() => handleSaveEvent(id)}
-                    >
-                        <Text style={styles.saveButtonText}>{isSaved ? "Unsave" : "Save"}</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Event Image */}
-                <Image
-                    source={image}
-                    style={styles.eventImage}
-                    resizeMode="cover"
-                />
-
-                {/* Event Information */}
-                <View style={styles.eventInfoContainer}>
-                    <Text style={styles.eventName}>{name}</Text>
-                    <Text style={styles.eventDate}>{`${dayAndDate} at ${newTime}`}</Text>
-                    <Text style={styles.eventDescription}>Important Info: {description}</Text>
-
-                    {/* Venue Information */}
-                    <View style={styles.venueDetails}>
-                        <Text style={styles.sectionTitle}>Venue Details</Text>
-                        <Text style={styles.venueText}>Name: {venueName}</Text>
-                        <Text style={styles.venueText}>Address: {address}, {city}, {state} {postalCode}</Text>
-                    </View>
-
-                    {/* Accessibility and Parking */}
-                    <View style={styles.venueDetails}>
-                        <Text style={styles.sectionTitle}>Accessibility & Parking</Text>
-                        <Text style={styles.venueText}>Accessible Seating: {accessibleSeatingDetail}</Text>
-                        <Text style={styles.venueText}>Parking: {parkingDetails}</Text>
-                    </View>
-
-                    {/* Rules & Box Office */}
-                    <View style={styles.venueDetails}>
-                        <Text style={styles.sectionTitle}>Rules & Box Office</Text>
-                        <Text style={styles.venueText}>General Rules: {generalRules}</Text>
-                        <Text style={styles.venueText}>Child Rules: {childRules}</Text>
-                        <Text style={styles.venueText}>Box Office Hours: {boxOfficeHours}</Text>
-                    </View>
-                </View>
-
-                {/* RSVP Button */}
-                <TouchableOpacity style={styles.rsvpButton} onPress={() => Linking.openURL(url)}>
-                    <Text style={styles.buttonText}>Tickets / More Details</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </SafeAreaView>
+                </ScrollView>
+            </SafeAreaView>
+        </ImageBackground>
     );
 };
 
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        padding: 20,
+        padding: 15,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'flex-start',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 15,
     },
     backArrow: {
         fontSize: 20,
