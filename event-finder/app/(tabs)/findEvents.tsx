@@ -31,7 +31,7 @@ const FindEventsScreen: React.FC = () => {
                     latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
                     radius: 25,
                     unit: 'miles',
-                    size: 10,
+                    size: 25,
                     classificationName: formattedPrefs,
                 },
             });
@@ -66,7 +66,7 @@ const FindEventsScreen: React.FC = () => {
                     latlong: profileData.latlong || '47.6062,-122.3321', // Seattle
                     radius: 25,
                     unit: 'miles',
-                    size: 10,
+                    size: 25,
                     classificationName: formattedPrefs,
                     sort: 'date,asc',
                 },
@@ -121,12 +121,10 @@ const FindEventsScreen: React.FC = () => {
 
         // Format location from venue, address, city, state, and country
         const venue = event.venue?.name || 'Unknown Venue';
-        const address = event.venue?.address?.line1 || '';
         const city = event.venue?.city?.name || '';
         const state = event.venue?.state?.stateCode || '';
-        const country = event.venue?.country?.name || '';
 
-        const location = `${venue}, ${address}, ${city}, ${state}, ${country}`;
+        const location = `${venue} | ${city}, ${state}`;
 
         return (
             <TouchableOpacity key={event.id} onPress={() => handleEventPress(event)} style={styles.eventCard}>
@@ -168,7 +166,7 @@ const FindEventsScreen: React.FC = () => {
                         {/* Search Input */}
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search events"
+                            placeholder="Search by events, artists, or venues"
                             placeholderTextColor="#000000"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
@@ -201,11 +199,8 @@ const FindEventsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        paddingTop: 20,
-        paddingLeft: 20,
-        paddingRight: 20,
-        paddingBottom: 0,
+        padding: 15,
+        paddingBottom: 105,
     },
     bodyBackgroundImage: {
         flex: 1,
@@ -249,12 +244,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     eventList: {
-        paddingBottom: 20,
+        paddingBottom: 50,
     },
     eventCard: {
         flexDirection: 'row',
         padding: 10,
-        marginVertical: 8,
+        marginVertical: 5,
         marginRight: 11,
         backgroundColor: '#1a1a1a',
         borderRadius: 10,

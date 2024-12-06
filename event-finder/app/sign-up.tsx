@@ -18,13 +18,14 @@ export default function SignUp() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [passwordVisible, setPasswordVisible] = useState(false); 
     const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false); // Track password field focus
     const { signUp } = useSession();
 
     /// ============================================================================
     // Handlers
     // =============================================================================
 
-    
+    const handlePasswordFocus = () => setIsPasswordFocused(true);
     const validatePassword = (password: string) => {
         const passwordRegex =
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
@@ -133,6 +134,7 @@ export default function SignUp() {
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry={!passwordVisible}
+                            onFocus={handlePasswordFocus}
                             style={styles.textInput}
                         />
                         <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)} style={styles.iconContainer}>
@@ -169,6 +171,18 @@ export default function SignUp() {
                 <View>
                     <Text style={styles.labelText}>* Required</Text>
                 </View>
+                {isPasswordFocused && (
+                    <View>
+                        <Text style={styles.heading}>Your password must:</Text>
+                        <View style={styles.bulletContainer}>
+                            <Text style={styles.bulletText}>• Be at least 6 characters long</Text>
+                            <Text style={styles.bulletText}>• Have one uppercase letter</Text>
+                            <Text style={styles.bulletText}>• Have one lowercase letter</Text>
+                            <Text style={styles.bulletText}>• Have one number</Text>
+                            <Text style={styles.bulletText}>• Have one special character</Text>
+                        </View>
+                    </View>
+                )}
             </View>
             <Pressable onPress={handleSignUpPress} style={styles.signUpButton}>
                 <Text style={styles.signUpButtonText}>Sign Up</Text>
@@ -256,6 +270,20 @@ const styles = StyleSheet.create({
     },
     eyeIcon: {
         padding: 8,
+    },
+    heading: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        color: '#333',
+    },
+    bulletContainer: {
+        marginLeft: 8,
+    },
+    bulletText: {
+        fontSize: 16,
+        color: '#555',
+        marginBottom: 4,
     },
     signUpButton: {
         backgroundColor: '#1e90ff',
