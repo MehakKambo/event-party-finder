@@ -1,3 +1,52 @@
+# Project Setup Guide
+---
+
+## Environment Variables
+The project requires the following environment variables to be set up in a `.env` file in the root directory.
+
+### Required Variables
+```plaintext
+EXPO_PUBLIC_TICKETMASTER_API_KEY=YOUR_TICKETMASTER_DISCOVERY_API_KEY
+EXPO_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
+EXPO_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
+EXPO_PUBLIC_APP_NAME=Eventify
+EXPO_PUBLIC_GEO_API_KEY=YOUR_GEOAPIFY_API_KEY
+```
+
+## Instructions to Obtain Keys
+
+### Ticketmaster API Key
+1. Visit the [Ticketmaster Developer Portal](https://developer.ticketmaster.com/).
+2. Sign up or log in to create a new app.
+3. Retrieve your **Ticketmaster Discovery API Key** and set it as `EXPO_PUBLIC_TICKETMASTER_API_KEY`.
+
+---
+
+### Firebase Configuration
+1. Visit the [Firebase Console](https://console.firebase.google.com/).
+2. Create a new project or use an existing one.
+3. Go to **Project Settings** and find your app's configuration under the **General** tab.
+4. Retrieve the following details:
+   - **API Key**: Set as `EXPO_PUBLIC_FIREBASE_API_KEY`.
+   - **Auth Domain**: Set as `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`.
+   - **Project ID**: Set as `EXPO_PUBLIC_FIREBASE_PROJECT_ID`.
+   - **Storage Bucket**: Set as `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`.
+   - **Messaging Sender ID**: Set as `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`.
+   - **App ID**: Set as `EXPO_PUBLIC_FIREBASE_APP_ID`.
+
+---
+
+### Geoapify API Key
+1. Visit the [Geoapify Developer Portal](https://www.geoapify.com/).
+2. Sign up or log in to generate an API key.
+3. Set this key as `EXPO_PUBLIC_GEO_API_KEY`.
+
+--- 
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
