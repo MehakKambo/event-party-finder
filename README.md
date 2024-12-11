@@ -45,4 +45,6 @@ This app addresses that by providing recommendations tailored to the user’s pr
   - **Geoapify API**: For geocoding and location-based functionalities.  
   - **Ticketmaster API**: For fetching real-time event data.
 
+## Project Setup Guidelines
+[README.md](https://github.com/MehakKambo/event-party-finder/blob/main/event-finder/README.md)
 ---
