@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ImageBackground } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Button, ImageBackground } from 'react-native';
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useProfile } from '@/components/ProfileContext';
 import { EventDetails } from '@/types/EventDetails';
 import ViewEvent from '@/components/viewEvent';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from 'react-native-ui-datepicker';
+import dayjs from 'dayjs';
 
 const TICKETMASTER_API_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
@@ -18,12 +20,46 @@ const FindEventsScreen: React.FC = () => {
     const [selectedEvent, setSelectedEvent] = useState<EventDetails | null>(null);
     const [isSortingRecent, setIsSortingRecent] = useState(false);
     const [isSortingRelevant, setIsSortingRelevant] = useState(false);
+    const [showPicker, setShowPicker] = useState(false);
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
+
+    const [showFilters, setShowFilter] = useState(false);
+
+    const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }) => {
+        if (newStartDate && !newEndDate) {
+            setStartDate(newStartDate);
+        } else if (newStartDate && newEndDate) {
+            setStartDate(newStartDate);
+            setEndDate(newEndDate);
+            setShowPicker(false);
+        }
+    };
+
+    const handleTogglePicker = () => {
+        if (!showPicker) {
+            setStartDate(null);
+            setEndDate(null);
+        }
+        setShowPicker((prev) => !prev);
+    };
+
+    const handleShowFilter = () => {
+        setShowFilter((prev) => !prev);
+    };
+
 
     // Fetch events from Ticketmaster API
     const fetchEvents = async () => {
         setLoading(true);
         try {
-            const formattedPrefs = profileData.preferences.join(',');
+            // Ensure valid date formatting
+            const formattedStartDate = startDate
+                ? `${new Date(startDate).toISOString().split('T')[0]}T00:00:00Z` : undefined;
+            const formattedEndDate = endDate
+                ? `${new Date(endDate).toISOString().split('T')[0]}T23:59:59Z` : undefined;
+            
+            
             const response = await axios.get(TICKETMASTER_API_URL, {
                 params: {
                     apikey: TICKETMASTER_API_KEY,
@@ -32,10 +68,12 @@ const FindEventsScreen: React.FC = () => {
                     radius: 25,
                     unit: 'miles',
                     size: 25,
-                    classificationName: formattedPrefs,
+                    sort: 'date,asc',
+                    startDateTime: formattedStartDate,
+                    endDateTime: formattedEndDate,
                 },
             });
-
+            
             const fetchedEvents = response.data._embedded?.events.map((event: any) => ({
                 id: event.id,
                 date: event.dates.start.localDate,
@@ -50,6 +88,7 @@ const FindEventsScreen: React.FC = () => {
             setEvents(fetchedEvents);
         } catch (error) {
             console.error('Error fetching events:', error);
+            
         } finally {
             setLoading(false);
         }
@@ -58,7 +97,6 @@ const FindEventsScreen: React.FC = () => {
     const fetchEventsByRecent = async () => {
         setLoading(true);
         try {
-            const formattedPrefs = profileData.preferences.join(',');
             const response = await axios.get(TICKETMASTER_API_URL, {
                 params: {
                     apikey: TICKETMASTER_API_KEY,
@@ -67,7 +105,6 @@ const FindEventsScreen: React.FC = () => {
                     radius: 25,
                     unit: 'miles',
                     size: 25,
-                    classificationName: formattedPrefs,
                     sort: 'date,asc',
                 },
             });
@@ -149,10 +186,10 @@ const FindEventsScreen: React.FC = () => {
 
     return selectedEvent ? (
         <ViewEvent
-          event={selectedEvent}
-          onBack={() => setSelectedEvent(null)}
+            event={selectedEvent}
+            onBack={() => setSelectedEvent(null)}
         />
-      ) : (
+    ) : (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
             <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
                 <View style={styles.header}>
@@ -173,14 +210,60 @@ const FindEventsScreen: React.FC = () => {
                             onSubmitEditing={fetchEvents}
                         />
                     </View>
-                    <View style={ {flexDirection: "row", justifyContent: 'space-evenly'} }>
-                        <TouchableOpacity style={styles.sortButton} onPress={handleSortRecent} disabled={isSortingRecent}>
-                            <Text style={styles.sortButtonText}>{isSortingRecent ? 'Sorting...' : 'Sort by recent'}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.sortButton} onPress={handleSortRelevant} disabled={isSortingRelevant}>
-                            <Text style={styles.sortButtonText}>{isSortingRelevant ? 'Sorting...' : 'Sort by relevant'}</Text>
-                        </TouchableOpacity>
+
+                    <View style={styles.filterContainer}>
+                        <Button title="Filters" onPress={handleShowFilter} />
                     </View>
+                        {showFilters && (
+                            <View>
+                                {/* Sort Buttons */}
+                                <View style={styles.sortContainer}>
+                                    <TouchableOpacity
+                                        style={styles.sortButton}
+                                        onPress={handleSortRecent}
+                                        disabled={isSortingRecent}
+                                    >
+                                        <Text style={styles.sortButtonText}>
+                                            {isSortingRecent ? 'Sorting...' : 'Sort by recent'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.sortButton}
+                                        onPress={handleSortRelevant}
+                                        disabled={isSortingRelevant}
+                                    >
+                                        <Text style={styles.sortButtonText}>
+                                            {isSortingRelevant ? 'Sorting...' : 'Sort by relevant'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Date Range Picker */}
+                                <View>
+                                <TouchableOpacity style={styles.rangeButton} onPress={handleTogglePicker}>
+                                    <Text style={styles.buttonText}>
+                                        {startDate && endDate
+                                            ? `Selected Range: ${dayjs(startDate).format('MM/DD/YYYY')} - ${dayjs(endDate).format('MM/DD/YYYY')}`
+                                            : 'Select Date Range'}
+                                    </Text>
+                                </TouchableOpacity>
+
+
+                                    {showPicker && (
+                                        <View style={styles.pickerContainer}>
+                                            <DateTimePicker
+                                                mode="range"
+                                                startDate={startDate}
+                                                endDate={endDate}
+                                                minDate={dayjs()} // Prevent selecting dates in the past
+                                                onChange={handleDateChange}
+                                            />
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+
                     {/* Events List */}
                     <ScrollView contentContainerStyle={styles.eventList}>
                         {loading ? (
@@ -217,7 +300,7 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         marginTop: 5,
-        marginBottom: 20,
+        marginBottom: 5,
         backgroundColor: '#e0e0e0',
         borderRadius: 10,
         flexDirection: 'row',
@@ -230,17 +313,44 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         color: '#000000',
     },
-    sortButton: {
-        //alignSelf: 'center',
+    filterContainer: {
+        alignItems: 'flex-start',
+    },
+    sortContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+    },
+    button: {
+        backgroundColor: '#007AFF',
+        padding: 15,
+        borderRadius: 5,
+    },
+    buttonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    pickerContainer: {
+        marginTop: 20,
+        width: '100%',
+    },
+    rangeButton: {
         backgroundColor: '#007AFF',
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 5,
         marginBottom: 10,
     },
+    sortButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 10,
+        paddingHorizontal: 45,
+        borderRadius: 5,
+        marginBottom: 10,
+        marginRight: 5,
+    },
     sortButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
         fontWeight: 'bold',
     },
     eventList: {

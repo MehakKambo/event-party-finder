@@ -177,13 +177,8 @@ const Profile: React.FC = () => {
                     <TextInput
                         style={styles.textInput}
                         value={profileData.email}
+                        readOnly
                         placeholder="Enter a valid email address"
-                        onChangeText={(text) =>
-                            setProfileData((prevData) => ({
-                                ...prevData,
-                                email: text,
-                            }))
-                        }
                     />
 
                     <Text style={styles.infoHeader}>Preferences</Text>
@@ -196,34 +191,24 @@ const Profile: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
 
-                    {/* Current Location Section */}
-                    <View style={styles.locationContainer}>
-                        <Text style={styles.locationHeader}>Current Location</Text>
-                        <Text style={styles.locationText}>{city}, {state}</Text>
-                    </View>
-
-                    <TouchableOpacity onPress={handleRefreshLocation} style={styles.refreshButton}>
-                        <Text style={styles.refreshButtonText}>Refresh Location</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.infoLabel}>Zip Code:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={profileData.zipCode}
-                        placeholder="Enter zip code"
-                        onChangeText={(text) =>
-                            setProfileData((prevData) => ({
-                                ...prevData,
-                                zipCode: text,
-                            }))
-                        }
-                    />
-
                     <TouchableOpacity
                         onPress={handleSaveProfile}
                         style={styles.saveButton}
                     >
                         <Text style={styles.saveButtonText}>Save Profile</Text>
+                    </TouchableOpacity>
+
+                    {/* Current Location Section */}
+                    <Text style={styles.infoHeader}>Current Location</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={`${city}, ${state}`}
+                        readOnly
+                        placeholder='City, State'
+                    />
+
+                    <TouchableOpacity onPress={handleRefreshLocation} style={styles.refreshButton}>
+                        <Text style={styles.refreshButtonText}>Refresh Location</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -280,7 +265,7 @@ const styles = StyleSheet.create({
     },
     locationContainer: {
         marginBottom: 20,
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     locationHeader: {
         fontSize: 20,
@@ -304,17 +289,15 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     refreshButtonText: {
-        color: '#fff',
+        color: 'white',
         fontWeight: 'bold',
         textAlign: 'center',
     },
     saveButton: {
-        marginVertical: 20,
-        width: 330,
-        backgroundColor: '#007AFF',
+        backgroundColor: '#407a40',
         padding: 10,
-        alignItems: 'center',
         borderRadius: 5,
+        marginBottom: 20,
     },
     saveButtonText: {
         textAlign: 'center',
