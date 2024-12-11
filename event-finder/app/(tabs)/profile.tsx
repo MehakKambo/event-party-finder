@@ -8,12 +8,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocation } from '@/components/LocationContext';
 import { useRouter } from 'expo-router';
+import { sendPasswordResetEmail, updatePassword } from "firebase/auth";
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
     const { profileData, setProfileData, saveProfile } = useProfile();
     const [loading, setLoading] = useState(true);
     const { city, state, latlong, refreshLocation } = useLocation();
+    const [newPassword, setNewPassword] = useState('');
     const router = useRouter();
 
     const uid = auth.currentUser?.uid;
@@ -120,6 +122,20 @@ const Profile: React.FC = () => {
         );
     }
 
+    const handlePasswordUpdate = async () => {
+        try {
+            if (auth.currentUser && auth.currentUser.email) {
+                await sendPasswordResetEmail(auth, auth.currentUser.email);
+                Alert.alert("Success", "Password update email sent. Please check your inbox. It may take 2-4 minutes to arrive.");
+            } else {
+                Alert.alert("Error", "No authenticated user found.");
+            }
+        } catch (err) {
+            console.error('Error resetting password:', err);
+            Alert.alert("Error", "Unable to reset password. Please log out, log back in to refresh your session, and then try again.");
+        }
+    };
+
     return (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
         <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
@@ -181,22 +197,33 @@ const Profile: React.FC = () => {
                         placeholder="Enter a valid email address"
                     />
 
-                    <Text style={styles.infoHeader}>Preferences</Text>
-                    <TouchableOpacity
-                        style={styles.textInput} // Reuse your input styles for consistency
-                        onPress={() => router.push('/preferences')} // Navigate to the preferences screen
-                    >
-                        <Text>
-                            {profileData.preferences?.join(', ') || 'Tap to set your preferences'}
-                        </Text>
-                    </TouchableOpacity>
-
                     <TouchableOpacity
                         onPress={handleSaveProfile}
                         style={styles.saveButton}
                     >
                         <Text style={styles.saveButtonText}>Save Profile</Text>
                     </TouchableOpacity>
+                    
+                    <Text style={styles.infoLabel}>Request Password Reset</Text>
+                    <View>
+                        <TouchableOpacity
+                            onPress={handlePasswordUpdate}
+                            style={styles.saveButton}
+                        >
+                            <Text style={styles.saveButtonText}>Send Reset Email</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.infoHeader}>Preferences</Text>
+                    <TouchableOpacity
+                        style={styles.textInput}
+                        onPress={() => router.push('/preferences')}
+                    >
+                        <Text>
+                            {profileData.preferences?.join(', ') || 'Tap to set your preferences'}
+                        </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.infoLabelSmall}>* Press on the preferences to edit them!</Text>
 
                     {/* Current Location Section */}
                     <Text style={styles.infoHeader}>Current Location</Text>
@@ -253,6 +280,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         marginVertical: 5,
+    },
+    infoLabelSmall: {
+        fontSize: 14,
+        fontWeight: '300',
+        marginVertical: 5,
+        fontStyle: 'italic',
+
     },
     textInput: {
         height: 40,
