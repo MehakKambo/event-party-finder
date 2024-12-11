@@ -8,12 +8,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocation } from '@/components/LocationContext';
 import { useRouter } from 'expo-router';
+import { sendPasswordResetEmail, updatePassword } from "firebase/auth";
 
 const Profile: React.FC = () => {
     const { signOut } = useSession();
     const { profileData, setProfileData, saveProfile } = useProfile();
     const [loading, setLoading] = useState(true);
     const { city, state, latlong, refreshLocation } = useLocation();
+    const [newPassword, setNewPassword] = useState('');
     const router = useRouter();
 
     const uid = auth.currentUser?.uid;
@@ -120,6 +122,20 @@ const Profile: React.FC = () => {
         );
     }
 
+    const handlePasswordUpdate = async () => {
+        try {
+            if (auth.currentUser && auth.currentUser.email) {
+                await sendPasswordResetEmail(auth, auth.currentUser.email);
+                Alert.alert("Success", "Password update email sent. Please check your inbox. It may take 2-4 minutes to arrive.");
+            } else {
+                Alert.alert("Error", "No authenticated user found.");
+            }
+        } catch (err) {
+            console.error('Error resetting password:', err);
+            Alert.alert("Error", "Unable to reset password. Please log out, log back in to refresh your session, and then try again.");
+        }
+    };
+
     return (
         <ImageBackground source={require('../../assets/images/simple-background.jpg')} style={styles.bodyBackgroundImage}>
         <SafeAreaView style={{ flex: 1, backgroundColor: "transparent" }}>
@@ -177,46 +193,8 @@ const Profile: React.FC = () => {
                     <TextInput
                         style={styles.textInput}
                         value={profileData.email}
+                        readOnly
                         placeholder="Enter a valid email address"
-                        onChangeText={(text) =>
-                            setProfileData((prevData) => ({
-                                ...prevData,
-                                email: text,
-                            }))
-                        }
-                    />
-
-                    <Text style={styles.infoHeader}>Preferences</Text>
-                    <TouchableOpacity
-                        style={styles.textInput} // Reuse your input styles for consistency
-                        onPress={() => router.push('/preferences')} // Navigate to the preferences screen
-                    >
-                        <Text>
-                            {profileData.preferences?.join(', ') || 'Tap to set your preferences'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* Current Location Section */}
-                    <View style={styles.locationContainer}>
-                        <Text style={styles.locationHeader}>Current Location</Text>
-                        <Text style={styles.locationText}>{city}, {state}</Text>
-                    </View>
-
-                    <TouchableOpacity onPress={handleRefreshLocation} style={styles.refreshButton}>
-                        <Text style={styles.refreshButtonText}>Refresh Location</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.infoLabel}>Zip Code:</Text>
-                    <TextInput
-                        style={styles.textInput}
-                        value={profileData.zipCode}
-                        placeholder="Enter zip code"
-                        onChangeText={(text) =>
-                            setProfileData((prevData) => ({
-                                ...prevData,
-                                zipCode: text,
-                            }))
-                        }
                     />
 
                     <TouchableOpacity
@@ -224,6 +202,40 @@ const Profile: React.FC = () => {
                         style={styles.saveButton}
                     >
                         <Text style={styles.saveButtonText}>Save Profile</Text>
+                    </TouchableOpacity>
+                    
+                    <Text style={styles.infoLabel}>Request Password Reset</Text>
+                    <View>
+                        <TouchableOpacity
+                            onPress={handlePasswordUpdate}
+                            style={styles.saveButton}
+                        >
+                            <Text style={styles.saveButtonText}>Send Reset Email</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.infoHeader}>Preferences</Text>
+                    <TouchableOpacity
+                        style={styles.textInput}
+                        onPress={() => router.push('/preferences')}
+                    >
+                        <Text>
+                            {profileData.preferences?.join(', ') || 'Tap to set your preferences'}
+                        </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.infoLabelSmall}>* Press on the preferences to edit them!</Text>
+
+                    {/* Current Location Section */}
+                    <Text style={styles.infoHeader}>Current Location</Text>
+                    <TextInput
+                        style={styles.textInput}
+                        value={`${city}, ${state}`}
+                        readOnly
+                        placeholder='City, State'
+                    />
+
+                    <TouchableOpacity onPress={handleRefreshLocation} style={styles.refreshButton}>
+                        <Text style={styles.refreshButtonText}>Refresh Location</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -269,6 +281,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginVertical: 5,
     },
+    infoLabelSmall: {
+        fontSize: 14,
+        fontWeight: '300',
+        marginVertical: 5,
+        fontStyle: 'italic',
+
+    },
     textInput: {
         height: 40,
         borderColor: '#ccc',
@@ -280,7 +299,7 @@ const styles = StyleSheet.create({
     },
     locationContainer: {
         marginBottom: 20,
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     locationHeader: {
         fontSize: 20,
@@ -304,17 +323,15 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     refreshButtonText: {
-        color: '#fff',
+        color: 'white',
         fontWeight: 'bold',
         textAlign: 'center',
     },
     saveButton: {
-        marginVertical: 20,
-        width: 330,
-        backgroundColor: '#007AFF',
+        backgroundColor: '#407a40',
         padding: 10,
-        alignItems: 'center',
         borderRadius: 5,
+        marginBottom: 20,
     },
     saveButtonText: {
         textAlign: 'center',

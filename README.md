@@ -1,38 +1,48 @@
-# event-party-finder
+# **Eventify**
+
 ### Team Members
 - Angelo Williams  
 - Mehak Kambo  
 - Michael Sun
 
-# Remaining Work for Beta Phase
+---
 
-### 1. Backend Setup
-   - Set up backend infrastructure to support data persistence and user data management.
-   - Define and implement APIs to interact with front-end components.
-   - Ensure integration with the Ticketmaster Discovery API and user data storage.
+## Summary of Project
+Stay connected to local events with **Eventify**, designed to simplify event discovery and management. With over 70% of event-goers relying on mobile apps to plan outings, our app offers a seamless way to explore, track, and create events. Integrated maps and intuitive management tools keep you informed in real-time, while empowering organizers to easily reach their local community.
 
-### 2. User Authentication
-   - Implement user authentication to allow users to create accounts, log in, and manage sessions.
-   - Integrate secure authentication (e.g., JWT) for protected routes and data access.
-   - Set up password recovery and validation for secure user account management.
+---
 
-### 3. User Preferences Setup
-   - Develop a feature for users to set and save event preferences (e.g., categories, location radius, event types).
-   - Ensure preferences are stored in the backend and used to tailor event recommendations on the homepage.
-   - Integrate user preferences into the Ticketmaster API queries to provide customized search results.
+### Value Proposition
+**Evenitfy** makes it easier for people to discover and join events by consolidating everything in one place. Platforms like Facebook or Eventbrite can feel cluttered, mixing event info with random posts, making it difficult to find relevant events. Many people miss out on local events, especially in smaller communities where events aren’t well-promoted. 
 
-### 4. State Management Enhancement
-   - Improve global state management to handle user data across different screens.
-   - Ensure seamless state restoration for app suspend/resume and session maintenance.
-   - Test and refine data persistence to prevent loss of state when switching between app screens.
+This app addresses that by providing recommendations tailored to the user’s preferences. It eliminates the fear of missing out by offering a clean interface for event discovery and management.
 
-### 5. Calendar Integration
-   - Integrate RSVP functionality with the user's calendar to streamline event planning.
-   - Utilize a calendar API to add events directly to the user’s personal calendar upon RSVP.
+## App Challenges and Solutions
 
-### 6. Final UI & UX Tweaks
-   - Refine UI components for a consistent look and feel across all screens.
-   - Optimize layout for the mobile form factor, ensuring responsive design and intuitive navigation.
-   - Address feedback on existing components, including the homepage and profile page.
+- **Sensor/Hardware Limitations**  
+  The app utilizes GPS to fetch user coordinates but accounts for device permissions and hardware variability to ensure compatibility.
+
+- **Communication Protocols**  
+  - Leveraged the Ticketmaster API to fetch event data, ensuring real-time and accurate event details.  
+  - Used Geoapify API for geocoding, enabling smooth conversions between coordinates and zip code, city, and state.
+
+- **Caching Considerations**  
+  Incorporated caching strategies to store frequent API responses locally, reducing unnecessary API calls and improving performance.
+
+- **Security**  
+  - User data is encoded in Base64 before being stored in Firebase Cloud Firestore.  
+  - Firebase automatically encrypts all stored data, ensuring compliance with modern security standards.
+
+- **Cross-Platform**  
+  Built the app using React Native, ensuring consistent functionality and design across both iOS and Android platforms.
+
+- **Scaling**  
+  Utilized Firebase's NoSQL-like database (Firestore), which is designed for high scalability and can handle increasing data loads seamlessly.
+
+- **Frameworks and Dependencies**  
+  - **React Native**: Chosen for its cross-platform capabilities and robust ecosystem.  
+  - **Firebase**: Used for authentication, database, and secure storage.  
+  - **Geoapify API**: For geocoding and location-based functionalities.  
+  - **Ticketmaster API**: For fetching real-time event data.
 
 ---
